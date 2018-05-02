@@ -1,19 +1,19 @@
-extern crate lime_renderer as renderer;
+extern crate lime_render as render;
 extern crate winit;
 
-use renderer::{Color, Renderer, d2, d3};
+use render::{Color, Renderer, d2, d3};
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 struct D3;
 
 impl d3::Draw for D3 {
-    fn draw<V: FnMut(&d3::Mesh, Color)>(&self, _: V) {}
+    fn draw(&self, _: &mut FnMut(&d3::Mesh, Color)) {}
 }
 
 struct D2;
 
 impl d2::Draw for D2 {
-    fn draw<V: FnMut(&[d2::Point], Color)>(&self, mut visitor: V) {
+    fn draw(&self, visitor: &mut FnMut(&[d2::Point], Color)) {
         static VERTICES: [d2::Point; 3] = [
             d2::Point(-0.5, -0.5),
             d2::Point(0.5, -0.5),
@@ -31,6 +31,7 @@ fn triangle() {
     let mut renderer = Renderer::new(&events_loop, builder);
 
     let mut quit = false;
+    let mut dim = renderer.dimensions();
     while !quit {
         events_loop.poll_events(|event| {
             match event {
@@ -42,6 +43,6 @@ fn triangle() {
             };
         });
 
-        renderer.draw(&D3, &D2);
+        renderer.render(&D3, &D2, &mut dim);
     }
 }

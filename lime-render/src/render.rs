@@ -14,7 +14,7 @@ use winit::{EventsLoop, Window, WindowBuilder};
 use std::iter;
 use std::sync::Arc;
 
-use {quit, quit_msg, d2, d3};
+use {quit, quit_msg, d2, d3, ScreenDimensions};
 
 pub struct Renderer {
     pub(crate) d2: d2::Renderer,
@@ -147,7 +147,20 @@ impl Renderer {
         }
     }
 
-    pub fn draw<D3: d3::Draw, D2: d2::Draw>(&mut self, d3: &D3, d2: &D2) {
+    pub fn dimensions(&self) -> ScreenDimensions {
+        self.swapchain.dimensions().into()
+    }
+
+    fn new_dimensions(&self) -> ScreenDimensions {
+        self.surface
+            .capabilities(self.queue.device().physical_device())
+            .unwrap_or_else(quit)
+            .current_extent
+            .unwrap()
+            .into()
+    }
+
+    pub fn render<D3: d3::Draw, D2: d2::Draw>(&mut self, d3: &D3, d2: &D2, dim: &mut ScreenDimensions) {
         if let Some(ref mut last_frame) = self.last_frame {
             last_frame.cleanup_finished();
         }
@@ -155,7 +168,7 @@ impl Renderer {
         let mut swapchain_dirty = false;
         for _ in 0..5 {
             if swapchain_dirty {
-                if self.recreate_swapchain() {
+                if self.recreate_swapchain(dim) {
                     trace!("Recreate swapchain succeeded.");
                     swapchain_dirty = false;
                 } else {
@@ -163,7 +176,7 @@ impl Renderer {
                     break;
                 }
             } else {
-                if self.try_draw(d3, d2) {
+                if self.try_render(d3, d2, dim) {
                     trace!("Draw succeeded.");
                     break;
                 } else {
@@ -174,22 +187,17 @@ impl Renderer {
         }
     }
 
-    fn recreate_swapchain(&mut self) -> bool {
-        let dim = self.surface
-            .capabilities(self.queue.device().physical_device())
-            .unwrap_or_else(quit)
-            .current_extent
-            .unwrap();
-        let (w, h) = (dim[0], dim[1]);
-
-        match self.swapchain.recreate_with_dimension(dim) {
+    fn recreate_swapchain(&mut self, dim: &mut ScreenDimensions) -> bool {
+        let new_dim = self.new_dimensions();
+        match self.swapchain.recreate_with_dimension(new_dim.into()) {
             Ok((swapchain, images)) => {
                 self.swapchain = swapchain;
                 let depth_buffer =
-                    AttachmentImage::transient(Arc::clone(self.queue.device()), [w, h], D16Unorm)
+                    AttachmentImage::transient(Arc::clone(self.queue.device()), new_dim.into(), D16Unorm)
                         .unwrap_or_else(quit);
                 self.framebuffers =
                     create_framebuffers(Arc::clone(&self.render_pass), images, depth_buffer);
+                *dim = new_dim;
                 true
             }
             Err(SwapchainCreationError::UnsupportedDimensions) => false,
@@ -197,7 +205,7 @@ impl Renderer {
         }
     }
 
-    fn try_draw<D3: d3::Draw, D2: d2::Draw>(&mut self, d3: &D3, d2: &D2) -> bool {
+    fn try_render<D3: d3::Draw, D2: d2::Draw>(&mut self, d3: &D3, d2: &D2, dim: &mut ScreenDimensions) -> bool {
         let (image_num, acquire) = match swapchain::acquire_next_image(self.swapchain.clone(), None)
         {
             Ok(r) => r,
@@ -207,15 +215,12 @@ impl Renderer {
 
         let fb = Arc::clone(&self.framebuffers[image_num]);
 
-        // ---
-
-        let (w, h) = (fb.width(), fb.height());
         let state = DynamicState {
             line_width: None,
             viewports: Some(vec![
                 Viewport {
                     origin: [0.0, 0.0],
-                    dimensions: [w as f32, h as f32],
+                    dimensions: [dim.w as f32, dim.h as f32],
                     depth_range: 0.0..1.0,
                 },
             ]),
@@ -226,7 +231,7 @@ impl Renderer {
             Arc::clone(self.queue.device()),
             self.queue.family(),
         ).unwrap_or_else(quit)
-            .begin_render_pass(fb, false, vec![[0.0, 0.0, 1.0, 1.0].into(), 1f32.into()])
+            .begin_render_pass(fb, false, vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()])
             .unwrap_or_else(quit);
         let command_buffer = self.d3
             .draw(command_buffer, d3, state.clone())
@@ -238,8 +243,6 @@ impl Renderer {
             .unwrap_or_else(quit)
             .build()
             .unwrap_or_else(quit);
-
-        // ---
 
         let future = match self.last_frame.take() {
             Some(last_frame) => last_frame
