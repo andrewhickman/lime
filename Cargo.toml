@@ -1,6 +1,9 @@
 [package]
 name = "lime"
 version = "0.1.0"
-authors = ["andre <andrew.hickman1@sky.com>"]
+authors = ["Andrew Hickman <andrew.hickman1@sky.com>"]
+
+[workspace]
+members = ["lime-renderer"]
 
 [dependencies]
