@@ -1,6 +1,6 @@
 use specs::prelude::*;
 
-use ::{d2, d3, Renderer, ScreenDimensions};
+use {Renderer, ScreenDimensions, d2, d3};
 
 pub struct RenderBundle;
 pub struct RenderSystem(Renderer);

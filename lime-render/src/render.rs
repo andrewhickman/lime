@@ -14,7 +14,7 @@ use winit::{EventsLoop, Window, WindowBuilder};
 use std::iter;
 use std::sync::Arc;
 
-use {quit, quit_msg, d2, d3, ScreenDimensions};
+use {quit, quit_msg, ScreenDimensions, d2, d3};
 
 pub struct Renderer {
     pub(crate) d2: d2::Renderer,
@@ -160,7 +160,12 @@ impl Renderer {
             .into()
     }
 
-    pub fn render<D3: d3::Draw, D2: d2::Draw>(&mut self, d3: &D3, d2: &D2, dim: &mut ScreenDimensions) {
+    pub fn render<D3: d3::Draw, D2: d2::Draw>(
+        &mut self,
+        d3: &D3,
+        d2: &D2,
+        dim: &mut ScreenDimensions,
+    ) {
         if let Some(ref mut last_frame) = self.last_frame {
             last_frame.cleanup_finished();
         }
@@ -192,9 +197,11 @@ impl Renderer {
         match self.swapchain.recreate_with_dimension(new_dim.into()) {
             Ok((swapchain, images)) => {
                 self.swapchain = swapchain;
-                let depth_buffer =
-                    AttachmentImage::transient(Arc::clone(self.queue.device()), new_dim.into(), D16Unorm)
-                        .unwrap_or_else(quit);
+                let depth_buffer = AttachmentImage::transient(
+                    Arc::clone(self.queue.device()),
+                    new_dim.into(),
+                    D16Unorm,
+                ).unwrap_or_else(quit);
                 self.framebuffers =
                     create_framebuffers(Arc::clone(&self.render_pass), images, depth_buffer);
                 *dim = new_dim;
@@ -205,7 +212,12 @@ impl Renderer {
         }
     }
 
-    fn try_render<D3: d3::Draw, D2: d2::Draw>(&mut self, d3: &D3, d2: &D2, dim: &mut ScreenDimensions) -> bool {
+    fn try_render<D3: d3::Draw, D2: d2::Draw>(
+        &mut self,
+        d3: &D3,
+        d2: &D2,
+        dim: &mut ScreenDimensions,
+    ) -> bool {
         let (image_num, acquire) = match swapchain::acquire_next_image(self.swapchain.clone(), None)
         {
             Ok(r) => r,

@@ -35,7 +35,10 @@ impl Into<[u32; 2]> for ScreenDimensions {
 
 impl From<[u32; 2]> for ScreenDimensions {
     fn from(arr: [u32; 2]) -> Self {
-        ScreenDimensions { w: arr[0], h: arr[1] }
+        ScreenDimensions {
+            w: arr[0],
+            h: arr[1],
+        }
     }
 }
 

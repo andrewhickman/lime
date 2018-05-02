@@ -19,7 +19,11 @@ pub trait Draw {
     fn draw(&self, visitor: &mut FnMut(&[Point], Color));
 }
 
-impl<T> Draw for T where T: Deref + ?Sized, T::Target: Draw {
+impl<T> Draw for T
+where
+    T: Deref + ?Sized,
+    T::Target: Draw,
+{
     fn draw(&self, visitor: &mut FnMut(&[Point], Color)) {
         self.deref().draw(visitor)
     }
