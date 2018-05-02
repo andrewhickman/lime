@@ -1,9 +1,9 @@
 [package]
-name = "lime"
+name = "main-loop"
 version = "0.1.0"
 authors = ["Andrew Hickman <andrew.hickman1@sky.com>"]
 
-[workspace]
-members = ["lime-main-loop", "lime-renderer"]
-
 [dependencies]
+failure = "0.1.1"
+log = "0.4.1"
+winit = "0.11.0"
