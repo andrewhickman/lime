@@ -1,7 +1,11 @@
 [package]
 name = "lime-render"
+description = "Renderer."
 version = "0.1.0"
 authors = ["Andrew Hickman <andrew.hickman1@sky.com>"]
+repository = "https://github.com/andrewhickman/lime"
+documentation = "https://docs.rs/lime-render/"
+license = "MIT/Apache-2.0"
 
 [dependencies]
 failure = "0.1.1"
