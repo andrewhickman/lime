@@ -26,11 +26,6 @@ pub trait App: Sized {
     fn device_event(&mut self, event: DeviceEvent) -> ControlFlow;
 }
 
-pub enum AppState {
-    Continue,
-    Quit,
-}
-
 pub fn run<A, F>(build: F)
 where
     A: App,
