@@ -1,5 +1,5 @@
 [package]
-name = "main-loop"
+name = "lime-main-loop"
 version = "0.1.0"
 authors = ["Andrew Hickman <andrew.hickman1@sky.com>"]
 

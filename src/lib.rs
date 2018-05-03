@@ -1,7 +1,3 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+extern crate lime_main_loop as main_loop;
+extern crate lime_render as render;
+extern crate lime_ui as ui;

@@ -1,11 +1,9 @@
 use specs::prelude::*;
+use specs::world::Bundle;
 
 use {Renderer, ScreenDimensions, d2, d3};
 
-pub struct RenderBundle;
-pub struct RenderSystem(Renderer);
-
-impl<'a> System<'a> for RenderSystem {
+impl<'a> System<'a> for Renderer {
     type SystemData = (
         ReadExpect<'a, Box<d3::Draw + Send + Sync>>,
         ReadExpect<'a, Box<d2::Draw + Send + Sync>>,
@@ -13,11 +11,22 @@ impl<'a> System<'a> for RenderSystem {
     );
 
     fn run(&mut self, (d3, d2, mut dim): Self::SystemData) {
-        self.0.render(&d3, &d2, &mut dim)
+        self.render(&d3, &d2, &mut dim)
     }
+}
 
-    fn setup(&mut self, res: &mut Resources) {
-        res.entry().or_insert_with(|| self.0.dimensions());
-        Self::SystemData::setup(res)
+impl Renderer {
+    pub fn bundle(&self) -> RenderBundle {
+        RenderBundle { dim: self.dimensions() }
+    }
+}
+
+pub struct RenderBundle {
+    dim: ScreenDimensions,
+}
+
+impl Bundle for RenderBundle {
+    fn add_to_world(self, world: &mut World) {
+        world.add_resource(self.dim)
     }
 }

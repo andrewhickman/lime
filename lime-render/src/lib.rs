@@ -18,7 +18,7 @@ mod sys;
 
 pub use self::color::Color;
 pub use self::render::Renderer;
-pub use self::sys::{RenderBundle, RenderSystem};
+pub use self::sys::RenderBundle;
 
 #[derive(Copy, Clone, Debug)]
 /// Resource holding the current size of the screen.
