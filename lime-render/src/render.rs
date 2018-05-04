@@ -1,3 +1,7 @@
+use std::iter;
+use std::sync::Arc;
+
+use specs::shred::Resources;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::{Device, DeviceExtensions, Queue};
 use vulkano::format::{D16Unorm, Format};
@@ -10,9 +14,6 @@ use vulkano::swapchain::{self, AcquireError, PresentMode, Surface, SurfaceTransf
 use vulkano::sync::{FlushError, GpuFuture};
 use vulkano_win::{self, VkSurfaceBuild};
 use winit::{EventsLoop, Window, WindowBuilder};
-
-use std::iter;
-use std::sync::Arc;
 
 use {quit, quit_msg, ScreenDimensions, d2, d3};
 
@@ -147,7 +148,7 @@ impl Renderer {
         }
     }
 
-    pub fn dimensions(&self) -> ScreenDimensions {
+    pub(crate) fn dimensions(&self) -> ScreenDimensions {
         self.swapchain.dimensions().into()
     }
 
@@ -160,8 +161,9 @@ impl Renderer {
             .into()
     }
 
-    pub fn render<D3: d3::Draw, D2: d2::Draw>(
+    pub(crate) fn render<D3: d3::Draw, D2: d2::Draw>(
         &mut self,
+        res: &Resources,
         d3: &D3,
         d2: &D2,
         dim: &mut ScreenDimensions,
@@ -181,7 +183,7 @@ impl Renderer {
                     break;
                 }
             } else {
-                if self.try_render(d3, d2, dim) {
+                if self.try_render(res, d3, d2, dim) {
                     trace!("Draw succeeded.");
                     break;
                 } else {
@@ -214,6 +216,7 @@ impl Renderer {
 
     fn try_render<D3: d3::Draw, D2: d2::Draw>(
         &mut self,
+        res: &Resources,
         d3: &D3,
         d2: &D2,
         dim: &mut ScreenDimensions,
@@ -246,11 +249,11 @@ impl Renderer {
             .begin_render_pass(fb, false, vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()])
             .unwrap_or_else(quit);
         let command_buffer = self.d3
-            .draw(command_buffer, d3, state.clone())
+            .draw(res, command_buffer, d3, state.clone())
             .next_subpass(false)
             .unwrap_or_else(quit);
         let command_buffer = self.d2
-            .draw(command_buffer, d2, state)
+            .draw(res, command_buffer, d2, state)
             .end_render_pass()
             .unwrap_or_else(quit)
             .build()

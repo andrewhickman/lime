@@ -5,6 +5,7 @@ pub use self::geom::Point;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use specs::shred::Resources;
 use vulkano::buffer::{BufferUsage, CpuBufferPool};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::descriptor::PipelineLayoutAbstract;
@@ -16,7 +17,7 @@ use vulkano::pipeline::vertex::SingleBufferDefinition;
 use {quit, Color};
 
 pub trait Draw {
-    fn draw(&self, visitor: &mut FnMut(&[Point], Color));
+    fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color));
 }
 
 impl<T> Draw for T
@@ -24,8 +25,8 @@ where
     T: Deref + ?Sized,
     T::Target: Draw,
 {
-    fn draw(&self, visitor: &mut FnMut(&[Point], Color)) {
-        self.deref().draw(visitor)
+    fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
+        self.deref().draw(res, visitor)
     }
 }
 
@@ -68,12 +69,13 @@ impl Renderer {
 
     pub(crate) fn draw<D: Draw>(
         &self,
+        res: &Resources,
         cmd: AutoCommandBufferBuilder,
         draw: &D,
         state: DynamicState,
     ) -> AutoCommandBufferBuilder {
         let mut vx_buf = Vec::new();
-        draw.draw(&mut |vertices, color| {
+        draw.draw(res, &mut |vertices, color| {
             vx_buf.extend(vertices.iter().map(|&vx| Vertex::new(vx, color)));
         });
         let buf = self.cpu_buf.chunk(vx_buf).unwrap_or_else(quit);
