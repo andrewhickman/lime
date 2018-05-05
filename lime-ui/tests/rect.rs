@@ -1,39 +1,30 @@
-extern crate env_logger;
 extern crate lime_render as render;
+extern crate lime_ui as ui;
 extern crate specs;
 extern crate winit;
 
-use render::{Color, Renderer, d2, d3};
+use render::{d2::Point, d3, Renderer, Color};
+use ui::{ElementComponent, Rect, DrawUi};
 use specs::prelude::*;
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
-struct D3;
+pub struct D3;
 
 impl d3::Draw for D3 {
     fn draw(&self, _: &Resources, _: &mut FnMut(&d3::Mesh, Color)) {}
 }
 
-struct D2;
-
-impl d2::Draw for D2 {
-    fn draw(&self, _: &Resources, visitor: &mut FnMut(&[d2::Point], Color)) {
-        static VERTICES: [d2::Point; 3] = [
-            d2::Point(-0.5, -0.5),
-            d2::Point(0.5, -0.5),
-            d2::Point(0.0, 0.5),
-        ];
-        visitor(&VERTICES, Color::RED)
-    }
-}
-
 #[test]
-fn triangle() {
-    env_logger::init();
+fn rect() {
     let mut events_loop = EventsLoop::new();
     let builder = WindowBuilder::new();
     let mut renderer = Renderer::new(&events_loop, builder);
     let mut world = World::new();
-    world.add_bundle(renderer.bundle(D3, D2));
+    world.register::<ElementComponent>();
+    let root = world.create_entity()
+        .with(Box::new(Rect::new(Point(-0.5, -0.5), Point(0.5, 0.5), Color::RED)) as ElementComponent)
+        .build();
+    world.add_bundle(renderer.bundle(D3, DrawUi::new(root)));
 
     let mut quit = false;
     while !quit {

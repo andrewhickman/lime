@@ -20,9 +20,9 @@ pub trait Draw {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color));
 }
 
-impl<T> Draw for T
+impl<T: ?Sized> Draw for T
 where
-    T: Deref + ?Sized,
+    T: Deref,
     T::Target: Draw,
 {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
@@ -76,6 +76,7 @@ impl Renderer {
     ) -> AutoCommandBufferBuilder {
         let mut vx_buf = Vec::new();
         draw.draw(res, &mut |vertices, color| {
+            debug_assert!(vertices.len() % 3 == 0);
             vx_buf.extend(vertices.iter().map(|&vx| Vertex::new(vx, color)));
         });
         let buf = self.cpu_buf.chunk(vx_buf).unwrap_or_else(quit);

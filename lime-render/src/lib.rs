@@ -1,6 +1,7 @@
 extern crate failure;
 #[macro_use]
 extern crate log;
+extern crate shrev;
 extern crate specs;
 #[macro_use]
 extern crate vulkano;

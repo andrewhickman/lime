@@ -8,4 +8,10 @@ documentation = "https://docs.rs/lime-ui/"
 license = "MIT/Apache-2.0"
 
 [dependencies]
+cassowary = "0.3.0"
 lime-render = { path = "../lime-render", version = "0.1.0" }
+shrev = "0.8.2"
+specs = "=0.11.0-alpha5"
+
+[dev-dependencies]
+winit = "0.11.0"

@@ -1,3 +1,4 @@
+use shrev::EventChannel;
 use specs::prelude::*;
 use specs::world::Bundle;
 
@@ -43,5 +44,6 @@ impl Bundle for RenderBundle {
         world.add_resource(self.dim);
         world.add_resource(self.d3);
         world.add_resource(self.d2);
+        world.add_resource(EventChannel::<ScreenDimensions>::new());
     }
 }

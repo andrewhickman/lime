@@ -1,7 +1,12 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+extern crate lime_render as render;
+extern crate shrev;
+extern crate specs;
+
+mod draw;
+mod elem;
+mod rect;
+mod layout;
+
+pub use draw::DrawUi;
+pub use elem::{Element, ElementComponent};
+pub use rect::Rect;

@@ -1,6 +1,8 @@
 use std::iter;
 use std::sync::Arc;
 
+use failure;
+use shrev::EventChannel;
 use specs::shred::Resources;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::{Device, DeviceExtensions, Queue};
@@ -11,7 +13,7 @@ use vulkano::instance::{Instance, PhysicalDevice};
 use vulkano::pipeline::viewport::Viewport;
 use vulkano::swapchain::{self, AcquireError, PresentMode, Surface, SurfaceTransform, Swapchain,
                          SwapchainCreationError};
-use vulkano::sync::{FlushError, GpuFuture};
+use vulkano::sync::GpuFuture;
 use vulkano_win::{self, VkSurfaceBuild};
 use winit::{EventsLoop, Window, WindowBuilder};
 
@@ -134,7 +136,8 @@ impl Renderer {
 
         let depth_buffer = AttachmentImage::transient(Arc::clone(queue.device()), [w, h], D16Unorm)
             .unwrap_or_else(quit);
-        let framebuffers = create_framebuffers(Arc::clone(&render_pass), images, depth_buffer);
+        let framebuffers = create_framebuffers(Arc::clone(&render_pass), images, depth_buffer)
+            .unwrap_or_else(quit);
 
         Renderer {
             surface,
@@ -175,59 +178,57 @@ impl Renderer {
         let mut swapchain_dirty = false;
         for _ in 0..5 {
             if swapchain_dirty {
-                if self.recreate_swapchain(dim) {
-                    trace!("Recreate swapchain succeeded.");
-                    swapchain_dirty = false;
-                } else {
-                    trace!("Recreate swapchain failed.");
-                    break;
+                match self.recreate_swapchain(res, dim) {
+                    Ok(()) => {
+                        trace!("Recreate swapchain succeeded.");
+                        swapchain_dirty = false;
+                    }
+                    Err(err) => {
+                        trace!("Recreate swapchain failed: {}.", err);
+                        break;
+                    }
                 }
             } else {
-                if self.try_render(res, d3, d2, dim) {
-                    trace!("Draw succeeded.");
-                    break;
-                } else {
-                    trace!("Draw failed.");
-                    swapchain_dirty = true;
+                match self.try_render(res, dim, d3, d2) {
+                    Ok(()) => {
+                        trace!("Draw succeeded.");
+                        break;
+                    }
+                    Err(err) => {
+                        trace!("Draw failed: {}.", err);
+                        swapchain_dirty = true;
+                    }
                 }
             }
         }
     }
 
-    fn recreate_swapchain(&mut self, dim: &mut ScreenDimensions) -> bool {
+    fn recreate_swapchain(
+        &mut self,
+        res: &Resources,
+        dim: &mut ScreenDimensions,
+    ) -> Result<(), failure::Error> {
         let new_dim = self.new_dimensions();
-        match self.swapchain.recreate_with_dimension(new_dim.into()) {
-            Ok((swapchain, images)) => {
-                self.swapchain = swapchain;
-                let depth_buffer = AttachmentImage::transient(
-                    Arc::clone(self.queue.device()),
-                    new_dim.into(),
-                    D16Unorm,
-                ).unwrap_or_else(quit);
-                self.framebuffers =
-                    create_framebuffers(Arc::clone(&self.render_pass), images, depth_buffer);
-                *dim = new_dim;
-                true
-            }
-            Err(SwapchainCreationError::UnsupportedDimensions) => false,
-            Err(err) => quit(err),
-        }
+        let (swapchain, images) = self.swapchain.recreate_with_dimension(new_dim.into())?;
+        self.swapchain = swapchain;
+        let depth_buffer =
+            AttachmentImage::transient(Arc::clone(self.queue.device()), new_dim.into(), D16Unorm)?;
+        self.framebuffers =
+            create_framebuffers(Arc::clone(&self.render_pass), images, depth_buffer)?;
+        *dim = new_dim;
+        res.fetch_mut::<EventChannel<ScreenDimensions>>()
+            .single_write(new_dim);
+        Ok(())
     }
 
     fn try_render<D3: d3::Draw, D2: d2::Draw>(
         &mut self,
         res: &Resources,
+        dim: &mut ScreenDimensions,
         d3: &D3,
         d2: &D2,
-        dim: &mut ScreenDimensions,
-    ) -> bool {
-        let (image_num, acquire) = match swapchain::acquire_next_image(self.swapchain.clone(), None)
-        {
-            Ok(r) => r,
-            Err(AcquireError::OutOfDate) => return false,
-            Err(err) => quit(err),
-        };
-
+    ) -> Result<(), failure::Error> {
+        let (image_num, acquire) = swapchain::acquire_next_image(self.swapchain.clone(), None)?;
         let fb = Arc::clone(&self.framebuffers[image_num]);
 
         let state = DynamicState {
@@ -245,25 +246,23 @@ impl Renderer {
         let command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(
             Arc::clone(self.queue.device()),
             self.queue.family(),
-        ).unwrap_or_else(quit)
-            .begin_render_pass(fb, false, vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()])
-            .unwrap_or_else(quit);
+        )?.begin_render_pass(
+            fb,
+            false,
+            vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
+        )?;
         let command_buffer = self.d3
             .draw(res, command_buffer, d3, state.clone())
-            .next_subpass(false)
-            .unwrap_or_else(quit);
+            .next_subpass(false)?;
         let command_buffer = self.d2
             .draw(res, command_buffer, d2, state)
-            .end_render_pass()
-            .unwrap_or_else(quit)
-            .build()
-            .unwrap_or_else(quit);
+            .end_render_pass()?
+            .build()?;
 
         let future = match self.last_frame.take() {
             Some(last_frame) => last_frame
                 .join(acquire)
-                .then_execute(Arc::clone(&self.queue), command_buffer)
-                .unwrap_or_else(quit)
+                .then_execute(Arc::clone(&self.queue), command_buffer)?
                 .then_swapchain_present(
                     Arc::clone(&self.queue),
                     Arc::clone(&self.swapchain),
@@ -272,8 +271,7 @@ impl Renderer {
                 .then_signal_fence_and_flush()
                 .map(|f| Box::new(f) as Box<GpuFuture + Send + Sync>),
             None => acquire
-                .then_execute(Arc::clone(&self.queue), command_buffer)
-                .unwrap_or_else(quit)
+                .then_execute(Arc::clone(&self.queue), command_buffer)?
                 .then_swapchain_present(
                     Arc::clone(&self.queue),
                     Arc::clone(&self.swapchain),
@@ -283,13 +281,8 @@ impl Renderer {
                 .map(|f| Box::new(f) as Box<GpuFuture + Send + Sync>),
         };
 
-        match future {
-            Ok(future) => self.last_frame = Some(future),
-            Err(FlushError::OutOfDate) => return false,
-            Err(err) => quit(err),
-        }
-
-        true
+        self.last_frame = Some(future?);
+        Ok(())
     }
 }
 
@@ -297,7 +290,7 @@ fn create_framebuffers<I>(
     pass: Arc<RenderPassAbstract + Send + Sync>,
     images: I,
     dbuf: Arc<AttachmentImage<D16Unorm>>,
-) -> Vec<Arc<FramebufferAbstract + Send + Sync>>
+) -> Result<Vec<Arc<FramebufferAbstract + Send + Sync>>, failure::Error>
 where
     I: IntoIterator<Item = Arc<SwapchainImage<Window>>>,
 {
@@ -311,14 +304,9 @@ fn create_framebuffer(
     pass: Arc<RenderPassAbstract + Send + Sync>,
     img: Arc<SwapchainImage<Window>>,
     dbuf: Arc<AttachmentImage<D16Unorm>>,
-) -> Arc<FramebufferAbstract + Send + Sync> {
-    Arc::new(
-        Framebuffer::start(pass)
-            .add(img)
-            .unwrap_or_else(quit)
-            .add(dbuf)
-            .unwrap_or_else(quit)
-            .build()
-            .unwrap_or_else(quit),
-    )
+) -> Result<Arc<FramebufferAbstract + Send + Sync>, failure::Error> {
+    Ok(Arc::new(Framebuffer::start(pass)
+        .add(img)?
+        .add(dbuf)?
+        .build()?))
 }

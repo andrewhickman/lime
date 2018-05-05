@@ -14,9 +14,9 @@ pub trait Draw {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&Mesh, Color));
 }
 
-impl<T> Draw for T
+impl<T: ?Sized> Draw for T
 where
-    T: Deref + ?Sized,
+    T: Deref,
     T::Target: Draw,
 {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&Mesh, Color)) {
