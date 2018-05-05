@@ -9,12 +9,14 @@ mod ticker;
 use std::collections::BinaryHeap;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
-use std::{cmp, thread};
+use std::thread;
 
 use winit::{ControlFlow, DeviceEvent, Event, EventsLoop, EventsLoopProxy, WindowEvent};
 
-use self::action::Action;
+use self::action::{Action, QueuedAction};
 use self::ticker::Ticker;
+
+const SECOND: Duration = Duration::from_secs(1);
 
 pub trait App: Sized {
     const UPDATES_PER_SECOND: u32;
@@ -34,7 +36,6 @@ where
     let mut events_loop = EventsLoop::new();
     let mut app = build(&events_loop);
 
-    const SECOND: Duration = Duration::from_secs(1);
     let intervals: [Duration; Action::COUNT] = [
         SECOND / A::UPDATES_PER_SECOND,
         SECOND / A::RENDERS_PER_SECOND,
@@ -77,14 +78,13 @@ fn wakeup(
 ) {
     if intervals.len() > 0 {
         let mut heap: BinaryHeap<_> = Action::values()
-            .map(|action| (Instant::now(), action))
-            .map(cmp::Reverse)
+            .map(QueuedAction::new)
             .collect();
 
         loop {
-            let cmp::Reverse((time, action)) = heap.pop().unwrap();
+            let QueuedAction(action, time) = heap.pop().unwrap();
             let next = time + intervals[action as usize];
-            heap.push(cmp::Reverse((next, action)));
+            heap.push(QueuedAction(action, next));
 
             let now = Instant::now();
             if now < time {

@@ -1,3 +1,8 @@
+use std::cmp::Ordering;
+use std::time::Instant;
+
+use ::SECOND;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub(crate) enum Action {
     Update = 0,
@@ -10,6 +15,31 @@ impl Action {
 
     pub(crate) fn values() -> ActionValues {
         ActionValues { prev: None }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub(crate) struct QueuedAction(pub Action, pub Instant);
+
+impl QueuedAction {
+    pub(crate) fn new(action: Action) -> Self {
+        if action == Action::Log {
+            QueuedAction(action, Instant::now() + SECOND)
+        } else {
+            QueuedAction(action, Instant::now())
+        }
+    }
+}
+
+impl PartialOrd for QueuedAction {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for QueuedAction {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.1.cmp(&self.1)
     }
 }
 
