@@ -5,9 +5,11 @@ pub use self::geom::Point;
 use std::ops::Deref;
 use std::sync::Arc;
 
+use failure;
 use specs::shred::Resources;
 use vulkano::buffer::{BufferUsage, CpuBufferPool};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
+use vulkano::descriptor::descriptor_set::FixedSizeDescriptorSetsPool;
 use vulkano::descriptor::PipelineLayoutAbstract;
 use vulkano::device::Device;
 use vulkano::framebuffer::{RenderPassAbstract, Subpass};
@@ -30,15 +32,19 @@ where
     }
 }
 
-pub(crate) struct Renderer {
-    cpu_buf: CpuBufferPool<Vertex>,
-    pipe: Arc<
-        GraphicsPipeline<
-            SingleBufferDefinition<Vertex>,
-            Box<PipelineLayoutAbstract + Send + Sync>,
-            Arc<RenderPassAbstract + Send + Sync>,
-        >,
+type Pipeline = Arc<
+    GraphicsPipeline<
+        SingleBufferDefinition<Vertex>,
+        Box<PipelineLayoutAbstract + Send + Sync>,
+        Arc<RenderPassAbstract + Send + Sync>,
     >,
+>;
+
+pub(crate) struct Renderer {
+    vbuf: CpuBufferPool<Vertex>,
+    ubuf: CpuBufferPool<vs::ty::Data>,
+    pipe: Pipeline,
+    pool: FixedSizeDescriptorSetsPool<Pipeline>,
 }
 
 impl Renderer {
@@ -61,27 +67,40 @@ impl Renderer {
                 .unwrap_or_else(quit),
         );
 
-        let usage = BufferUsage::vertex_buffer_transfer_destination();
-        let cpu_buf = CpuBufferPool::new(device, usage);
+        let vbuf = {
+            let usage = BufferUsage::vertex_buffer();
+            CpuBufferPool::new(Arc::clone(&device), usage)
+        };
 
-        Renderer { pipe, cpu_buf }
+        let ubuf = {
+            let usage = BufferUsage::uniform_buffer();
+            CpuBufferPool::new(Arc::clone(&device), usage)
+        };
+
+        let pool = FixedSizeDescriptorSetsPool::new(Arc::clone(&pipe), 0);
+
+        Renderer { pipe, vbuf, ubuf, pool }
     }
 
     pub(crate) fn draw<D: Draw>(
-        &self,
+        &mut self,
         res: &Resources,
         cmd: AutoCommandBufferBuilder,
         draw: &D,
         state: DynamicState,
-    ) -> AutoCommandBufferBuilder {
-        let mut vx_buf = Vec::new();
+    ) -> Result<AutoCommandBufferBuilder, failure::Error> {
+        let mut vbuf = Vec::new();
         draw.draw(res, &mut |vertices, color| {
             debug_assert!(vertices.len() % 3 == 0);
-            vx_buf.extend(vertices.iter().map(|&vx| Vertex::new(vx, color)));
+            vbuf.extend(vertices.iter().map(|&v| Vertex::new(v, color)));
         });
-        let buf = self.cpu_buf.chunk(vx_buf).unwrap_or_else(quit);
-        cmd.draw(Arc::clone(&self.pipe), state, buf, (), ())
-            .unwrap_or_else(quit)
+        let vbuf = self.vbuf.chunk(vbuf)?;
+        let ubuf = self.ubuf.next(vs::ty::Data {
+            dimensions: state.viewports.as_ref().unwrap()[0].dimensions
+        })?;
+        let set = self.pool.next().add_buffer(ubuf)?.build()?;
+
+        Ok(cmd.draw(Arc::clone(&self.pipe), state, vbuf, set, ())?)
     }
 }
 
@@ -103,7 +122,7 @@ impl_vertex!(Vertex, position, color);
 mod vs {
     #[derive(VulkanoShader)]
     #[ty = "vertex"]
-    #[path = "shader/vert2d.glsl"]
+    #[path = "shader/d2/vert.glsl"]
     struct Dummy;
 }
 
@@ -111,6 +130,6 @@ mod vs {
 mod fs {
     #[derive(VulkanoShader)]
     #[ty = "fragment"]
-    #[path = "shader/frag2d.glsl"]
+    #[path = "shader/d2/frag.glsl"]
     struct Dummy;
 }

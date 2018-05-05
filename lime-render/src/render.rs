@@ -11,8 +11,7 @@ use vulkano::framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract,
 use vulkano::image::{AttachmentImage, SwapchainImage};
 use vulkano::instance::{Instance, PhysicalDevice};
 use vulkano::pipeline::viewport::Viewport;
-use vulkano::swapchain::{self, AcquireError, PresentMode, Surface, SurfaceTransform, Swapchain,
-                         SwapchainCreationError};
+use vulkano::swapchain::{self, PresentMode, Surface, SurfaceTransform, Swapchain};
 use vulkano::sync::GpuFuture;
 use vulkano_win::{self, VkSurfaceBuild};
 use winit::{EventsLoop, Window, WindowBuilder};
@@ -252,10 +251,10 @@ impl Renderer {
             vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
         )?;
         let command_buffer = self.d3
-            .draw(res, command_buffer, d3, state.clone())
+            .draw(res, command_buffer, d3, state.clone())?
             .next_subpass(false)?;
         let command_buffer = self.d2
-            .draw(res, command_buffer, d2, state)
+            .draw(res, command_buffer, d2, state)?
             .end_render_pass()?
             .build()?;
 

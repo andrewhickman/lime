@@ -1,4 +1,3 @@
-extern crate env_logger;
 extern crate lime_render as render;
 extern crate specs;
 extern crate winit;
@@ -18,9 +17,9 @@ struct D2;
 impl d2::Draw for D2 {
     fn draw(&self, _: &Resources, visitor: &mut FnMut(&[d2::Point], Color)) {
         static VERTICES: [d2::Point; 3] = [
-            d2::Point(-0.5, -0.5),
-            d2::Point(0.5, -0.5),
-            d2::Point(0.0, 0.5),
+            d2::Point(100.0, 100.0),
+            d2::Point(200.0, 100.0),
+            d2::Point(100.0, 200.0),
         ];
         visitor(&VERTICES, Color::RED)
     }
@@ -28,7 +27,6 @@ impl d2::Draw for D2 {
 
 #[test]
 fn triangle() {
-    env_logger::init();
     let mut events_loop = EventsLoop::new();
     let builder = WindowBuilder::new();
     let mut renderer = Renderer::new(&events_loop, builder);

@@ -1,6 +1,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 
+use failure;
 use specs::shred::Resources;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::Device;
@@ -37,8 +38,8 @@ impl Renderer {
         cmd: AutoCommandBufferBuilder,
         d3: &D,
         _: DynamicState,
-    ) -> AutoCommandBufferBuilder {
+    ) -> Result<AutoCommandBufferBuilder, failure::Error> {
         d3.draw(res, &mut |_, _| ());
-        cmd
+        Ok(cmd)
     }
 }

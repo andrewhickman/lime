@@ -22,7 +22,7 @@ fn rect() {
     let mut world = World::new();
     world.register::<ElementComponent>();
     let root = world.create_entity()
-        .with(Box::new(Rect::new(Point(-0.5, -0.5), Point(0.5, 0.5), Color::RED)) as ElementComponent)
+        .with(Box::new(Rect::new(Point(100.0, 100.0), Point(500.0, 300.0), Color::RED)) as ElementComponent)
         .build();
     world.add_bundle(renderer.bundle(D3, DrawUi::new(root)));
 
