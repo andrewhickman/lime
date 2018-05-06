@@ -20,7 +20,7 @@ mod sys;
 
 pub use self::color::Color;
 pub use self::render::Renderer;
-pub use self::sys::RenderBundle;
+pub use self::sys::Bundle;
 pub use self::dim::ScreenDimensions;
 
 /// Utility function to panic with a payload of a failure::Error.

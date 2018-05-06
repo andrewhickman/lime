@@ -1,15 +1,12 @@
 use std::borrow::Cow;
 use std::ops::DerefMut;
 
-use render::Color;
-use render::d2::{Draw, Point};
+use render::d2::Draw;
 use specs::prelude::*;
 
-pub trait Element: Draw {
-    fn parent(&self) -> Option<Entity> {
-        None
-    }
+use {layout::LayoutVars, Layout};
 
+pub trait Element: Draw + Layout {
     fn children(&self) -> Cow<[Entity]> {
         Vec::new().into()
     }
@@ -20,10 +17,6 @@ where
     T: DerefMut,
     T::Target: Element,
 {
-    fn parent(&self) -> Option<Entity> {
-        self.deref().parent()
-    }
-
     fn children(&self) -> Cow<[Entity]> {
         self.deref().children()
     }
@@ -35,8 +28,14 @@ impl Component for ElementComponent {
     type Storage = DenseVecStorage<Self>;
 }
 
+/*
 impl Default for ElementComponent {
     fn default() -> Self {
+        use cassowary::Solver;
+        use render::{d2::Point, Color};
+
+        use ::layout::{Position, LayoutVars};
+
         struct NullElement;
 
         impl Element for NullElement {}
@@ -45,8 +44,44 @@ impl Default for ElementComponent {
             fn draw(&self, _: &Resources, _: &mut FnMut(&[Point], Color)) {}
         }
 
+        impl Layout for NullElement {
+            fn constraints(&self, _: &ReadStorage<LayoutVars>, _: &mut Solver) {}
+            fn resize(&mut self, _: &Position) {}
+        }
+
         Box::new(NullElement)
     }
+}
+*/
+
+pub struct Root {
+    pub(crate) stack: Vec<Entity>,
+}
+
+impl Root {
+    pub fn new() -> Self {
+        Root { stack: Vec::new() }
+    }
+}
+
+pub fn add<E>(world: &mut World, elem: E) -> EntityBuilder
+where
+    E: Element + Send + Sync + 'static,
+{
+    world
+        .create_entity()
+        .with(Box::new(elem) as ElementComponent)
+        .with(LayoutVars::new())
+}
+
+pub fn add_root<E>(world: &mut World, elem: E) -> EntityBuilder
+where
+    E: Element + Send + Sync + 'static,
+{
+    let ent = world.create_entity_unchecked();
+    world.write_resource::<Root>().stack.push(ent.entity);
+    ent.with(Box::new(elem) as ElementComponent)
+        .with(LayoutVars::new())
 }
 
 pub(crate) fn visit_children<F>(
@@ -63,6 +98,7 @@ pub(crate) fn visit_children<F>(
     }
 }
 
+/*
 pub(crate) fn visit_children_mut<F>(
     store: &mut WriteStorage<ElementComponent>,
     elem: Entity,
@@ -80,3 +116,4 @@ pub(crate) fn visit_children_mut<F>(
         visit_children_mut(store, child, visitor)
     }
 }
+*/

@@ -1,6 +1,6 @@
 use shrev::EventChannel;
 use specs::prelude::*;
-use specs::world::Bundle;
+use specs::world;
 
 use {Renderer, ScreenDimensions, d2, d3};
 
@@ -20,12 +20,12 @@ impl<'a> RunNow<'a> for Renderer {
 }
 
 impl Renderer {
-    pub fn bundle<D3, D2>(&self, d3: D3, d2: D2) -> RenderBundle
+    pub fn bundle<D3, D2>(&self, d3: D3, d2: D2) -> Bundle
     where
         D3: d3::Draw + Send + Sync + 'static,
         D2: d2::Draw + Send + Sync + 'static,
     {
-        RenderBundle {
+        Bundle {
             dim: self.dimensions(),
             d2: Box::new(d2),
             d3: Box::new(d3),
@@ -33,13 +33,13 @@ impl Renderer {
     }
 }
 
-pub struct RenderBundle {
+pub struct Bundle {
     dim: ScreenDimensions,
     d3: Box<d3::Draw + Send + Sync>,
     d2: Box<d2::Draw + Send + Sync>,
 }
 
-impl Bundle for RenderBundle {
+impl world::Bundle for Bundle {
     fn add_to_world(self, world: &mut World) {
         world.add_resource(self.dim);
         world.add_resource(self.d3);

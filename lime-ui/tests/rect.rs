@@ -3,9 +3,9 @@ extern crate lime_ui as ui;
 extern crate specs;
 extern crate winit;
 
-use render::{Color, Renderer, d2::Point, d3};
+use render::{d2::Point, d3, Color, Renderer};
 use specs::prelude::*;
-use ui::{DrawUi, ElementComponent, Rect};
+use ui::{elem, DrawUi, ElementComponent, Rect, LayoutSystem};
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 pub struct D3;
@@ -21,15 +21,18 @@ fn rect() {
     let mut renderer = Renderer::new(&events_loop, builder);
     let mut world = World::new();
     world.register::<ElementComponent>();
-    let root = world
-        .create_entity()
-        .with(Box::new(Rect::new(
-            Point(100.0, 100.0),
-            Point(500.0, 300.0),
-            Color::RED,
-        )) as ElementComponent)
+    world.add_bundle(renderer.bundle(D3, DrawUi));
+    world.add_bundle(ui::Bundle::new());
+
+    elem::add_root(&mut world, Rect::new(
+        Point(100.0, 100.0),
+        Point(500.0, 300.0),
+        Color::RED,
+    ));
+
+    let mut dispatcher = DispatcherBuilder::new()
+        .with_thread_local(LayoutSystem::new(&world.res))
         .build();
-    world.add_bundle(renderer.bundle(D3, DrawUi::new(root)));
 
     let mut quit = false;
     while !quit {
@@ -44,5 +47,6 @@ fn rect() {
         });
 
         renderer.run_now(&mut world.res);
+        dispatcher.dispatch(&world.res);
     }
 }

@@ -1,22 +1,21 @@
-use render::Color;
 use render::d2::{Draw, Point};
+use render::Color;
 use specs::prelude::*;
 
 use {elem, ElementComponent};
 
-pub struct DrawUi {
-    root: Entity,
-}
+pub struct DrawUi;
 
-impl DrawUi {
-    pub fn new(root: Entity) -> Self {
-        DrawUi { root }
-    }
-}
+type DrawData<'a> = (
+    ReadExpect<'a, elem::Root>,
+    ReadStorage<'a, ElementComponent>,
+);
 
 impl Draw for DrawUi {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
-        let elems = ReadStorage::<ElementComponent>::fetch(res);
-        elem::visit_children(&elems, self.root, &mut |elem| elem.draw(res, visitor));
+        let (root, elems) = DrawData::fetch(res);
+        for &elem in &root.stack {
+            elem::visit_children(&elems, elem, &mut |e| e.draw(res, visitor));
+        }
     }
 }
