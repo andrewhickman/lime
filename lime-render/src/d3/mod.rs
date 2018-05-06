@@ -28,7 +28,7 @@ where
 pub(crate) struct Renderer;
 
 impl Renderer {
-    pub(crate) fn new(_: Arc<Device>, _: Subpass<Arc<RenderPassAbstract + Send + Sync>>) -> Self {
+    pub(crate) fn new(_: &Arc<Device>, _: Subpass<Arc<RenderPassAbstract + Send + Sync>>) -> Self {
         Renderer
     }
 

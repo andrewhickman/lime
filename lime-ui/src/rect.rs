@@ -1,8 +1,8 @@
-use render::d2::{Draw, Point};
 use render::Color;
+use render::d2::{Draw, Point};
 use specs::prelude::*;
 
-use ::Element;
+use Element;
 
 pub struct Rect {
     tl: Point,

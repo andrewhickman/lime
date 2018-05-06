@@ -52,7 +52,7 @@ where
         Event::WindowEvent { event, .. } => app.window_event(event),
         Event::DeviceEvent { event, .. } => app.device_event(event),
         Event::Awakened => {
-            let (deadline, action) = rx.recv().unwrap();
+            let QueuedAction(action, deadline) = rx.recv().unwrap();
             if deadline < Instant::now() {
                 trace!("Skipping action {:?}.", action);
             } else {
@@ -73,30 +73,25 @@ where
 
 fn wakeup(
     proxy: EventsLoopProxy,
-    tx: mpsc::Sender<(Instant, Action)>,
+    tx: mpsc::Sender<QueuedAction>,
     intervals: &[Duration; Action::COUNT],
 ) {
-    if intervals.len() > 0 {
-        let mut heap: BinaryHeap<_> = Action::values()
-            .map(QueuedAction::new)
-            .collect();
+    let mut heap: BinaryHeap<_> = Action::values()
+        .map(QueuedAction::new)
+        .collect();
 
-        loop {
-            let QueuedAction(action, time) = heap.pop().unwrap();
-            let next = time + intervals[action as usize];
-            heap.push(QueuedAction(action, next));
+    loop {
+        let QueuedAction(action, time) = heap.pop().unwrap();
+        let next = QueuedAction(action, time + intervals[action as usize]);
+        heap.push(next);
 
-            let now = Instant::now();
-            if now < time {
-                thread::sleep(time - now);
-            }
+        let now = Instant::now();
+        if now < time {
+            thread::sleep(time - now);
+        }
 
-            if let Err(_) = tx.send((next, action)) {
-                return;
-            }
-            if let Err(_) = proxy.wakeup() {
-                return;
-            }
+        if tx.send(next).is_err() || proxy.wakeup().is_err() {
+            return;
         }
     }
 }

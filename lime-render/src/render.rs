@@ -125,17 +125,17 @@ impl Renderer {
         ) as Arc<RenderPassAbstract + Send + Sync>;
 
         let d3 = d3::Renderer::new(
-            Arc::clone(&queue.device()),
+            queue.device(),
             Subpass::from(Arc::clone(&render_pass), 0).unwrap(),
         );
         let d2 = d2::Renderer::new(
-            Arc::clone(&queue.device()),
+            queue.device(),
             Subpass::from(Arc::clone(&render_pass), 1).unwrap(),
         );
 
         let depth_buffer = AttachmentImage::transient(Arc::clone(queue.device()), [w, h], D16Unorm)
             .unwrap_or_else(quit);
-        let framebuffers = create_framebuffers(Arc::clone(&render_pass), images, depth_buffer)
+        let framebuffers = create_framebuffers(&render_pass, images, &depth_buffer)
             .unwrap_or_else(quit);
 
         Renderer {
@@ -213,7 +213,7 @@ impl Renderer {
         let depth_buffer =
             AttachmentImage::transient(Arc::clone(self.queue.device()), new_dim.into(), D16Unorm)?;
         self.framebuffers =
-            create_framebuffers(Arc::clone(&self.render_pass), images, depth_buffer)?;
+            create_framebuffers(&self.render_pass, images, &depth_buffer)?;
         *dim = new_dim;
         res.fetch_mut::<EventChannel<ScreenDimensions>>()
             .single_write(new_dim);
@@ -286,26 +286,26 @@ impl Renderer {
 }
 
 fn create_framebuffers<I>(
-    pass: Arc<RenderPassAbstract + Send + Sync>,
+    pass: &Arc<RenderPassAbstract + Send + Sync>,
     images: I,
-    dbuf: Arc<AttachmentImage<D16Unorm>>,
+    dbuf: &Arc<AttachmentImage<D16Unorm>>,
 ) -> Result<Vec<Arc<FramebufferAbstract + Send + Sync>>, failure::Error>
 where
     I: IntoIterator<Item = Arc<SwapchainImage<Window>>>,
 {
     images
         .into_iter()
-        .map(|img| create_framebuffer(Arc::clone(&pass), img, Arc::clone(&dbuf)))
+        .map(|img| create_framebuffer(pass, img, dbuf))
         .collect()
 }
 
 fn create_framebuffer(
-    pass: Arc<RenderPassAbstract + Send + Sync>,
+    pass: &Arc<RenderPassAbstract + Send + Sync>,
     img: Arc<SwapchainImage<Window>>,
-    dbuf: Arc<AttachmentImage<D16Unorm>>,
+    dbuf: &Arc<AttachmentImage<D16Unorm>>,
 ) -> Result<Arc<FramebufferAbstract + Send + Sync>, failure::Error> {
-    Ok(Arc::new(Framebuffer::start(pass)
+    Ok(Arc::new(Framebuffer::start(Arc::clone(pass))
         .add(img)?
-        .add(dbuf)?
+        .add(Arc::clone(dbuf))?
         .build()?))
 }

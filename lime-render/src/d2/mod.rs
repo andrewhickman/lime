@@ -49,11 +49,11 @@ pub(crate) struct Renderer {
 
 impl Renderer {
     pub(crate) fn new(
-        device: Arc<Device>,
+        device: &Arc<Device>,
         subpass: Subpass<Arc<RenderPassAbstract + Send + Sync>>,
     ) -> Self {
-        let vs = vs::Shader::load(Arc::clone(&device)).unwrap_or_else(quit);
-        let fs = fs::Shader::load(Arc::clone(&device)).unwrap_or_else(quit);
+        let vs = vs::Shader::load(Arc::clone(device)).unwrap_or_else(quit);
+        let fs = fs::Shader::load(Arc::clone(device)).unwrap_or_else(quit);
 
         let pipe = Arc::new(
             GraphicsPipeline::start()
@@ -63,18 +63,18 @@ impl Renderer {
                 .viewports_dynamic_scissors_irrelevant(1)
                 .fragment_shader(fs.main_entry_point(), ())
                 .render_pass(subpass)
-                .build(Arc::clone(&device))
+                .build(Arc::clone(device))
                 .unwrap_or_else(quit),
         );
 
         let vbuf = {
             let usage = BufferUsage::vertex_buffer();
-            CpuBufferPool::new(Arc::clone(&device), usage)
+            CpuBufferPool::new(Arc::clone(device), usage)
         };
 
         let ubuf = {
             let usage = BufferUsage::uniform_buffer();
-            CpuBufferPool::new(Arc::clone(&device), usage)
+            CpuBufferPool::new(Arc::clone(device), usage)
         };
 
         let pool = FixedSizeDescriptorSetsPool::new(Arc::clone(&pipe), 0);
