@@ -4,6 +4,7 @@ use std::sync::Arc;
 use failure;
 use shrev::EventChannel;
 use specs::shred::Resources;
+use utils::{throw, throw_msg};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::{Device, DeviceExtensions, Queue};
 use vulkano::format::{D16Unorm, Format};
@@ -16,7 +17,7 @@ use vulkano::sync::GpuFuture;
 use vulkano_win::{self, VkSurfaceBuild};
 use winit::{EventsLoop, Window, WindowBuilder};
 
-use {quit, quit_msg, ScreenDimensions, d2, d3};
+use {ScreenDimensions, d2, d3};
 
 pub struct Renderer {
     pub(crate) d2: d2::Renderer,
@@ -33,21 +34,21 @@ impl Renderer {
     pub fn new(events_loop: &EventsLoop, builder: WindowBuilder) -> Self {
         let instance = {
             let extensions = vulkano_win::required_extensions();
-            Instance::new(None, &extensions, None).unwrap_or_else(quit)
+            Instance::new(None, &extensions, None).unwrap_or_else(throw)
         };
 
         let phys = PhysicalDevice::enumerate(&instance)
             .next()
-            .unwrap_or_else(|| quit_msg("no device available"));
+            .unwrap_or_else(|| throw_msg("no device available"));
         info!("Using device: {} (type: {:?}).", phys.name(), phys.ty());
 
         let surface = builder
             .build_vk_surface(&events_loop, Arc::clone(&instance))
-            .unwrap_or_else(quit);
+            .unwrap_or_else(throw);
 
         let queue_family = phys.queue_families()
             .find(|&q| q.supports_graphics() && surface.is_supported(q).unwrap_or(false))
-            .unwrap_or_else(|| quit_msg("couldn't find a graphical queue family"));
+            .unwrap_or_else(|| throw_msg("couldn't find a graphical queue family"));
 
         let (_, mut queues) = {
             let device_ext = DeviceExtensions {
@@ -60,21 +61,21 @@ impl Renderer {
                 phys.supported_features(),
                 &device_ext,
                 iter::once((queue_family, 0.5)),
-            ).unwrap_or_else(quit)
+            ).unwrap_or_else(throw)
         };
 
         let queue = queues.next().unwrap();
 
         let caps = surface
             .capabilities(queue.device().physical_device())
-            .unwrap_or_else(quit);
+            .unwrap_or_else(throw);
         let format = caps.supported_formats
             .first()
-            .unwrap_or_else(|| quit_msg("surface has no supported formats"));
+            .unwrap_or_else(|| throw_msg("surface has no supported formats"));
         let alpha = caps.supported_composite_alpha
             .iter()
             .next()
-            .unwrap_or_else(|| quit_msg("surface has no supported alpha modes"));
+            .unwrap_or_else(|| throw_msg("surface has no supported alpha modes"));
 
         let (w, h) = surface.window().get_inner_size().unwrap();
         let (swapchain, images) = Swapchain::new(
@@ -91,7 +92,7 @@ impl Renderer {
             PresentMode::Mailbox,
             true,
             None,
-        ).unwrap_or_else(quit);
+        ).unwrap_or_else(throw);
 
         let render_pass = Arc::new(
             ordered_passes_renderpass!(Arc::clone(queue.device()),
@@ -121,7 +122,7 @@ impl Renderer {
                     input: []
                 }
             ]
-        ).unwrap_or_else(quit),
+        ).unwrap_or_else(throw),
         ) as Arc<RenderPassAbstract + Send + Sync>;
 
         let d3 = d3::Renderer::new(
@@ -134,9 +135,9 @@ impl Renderer {
         );
 
         let depth_buffer = AttachmentImage::transient(Arc::clone(queue.device()), [w, h], D16Unorm)
-            .unwrap_or_else(quit);
+            .unwrap_or_else(throw);
         let framebuffers = create_framebuffers(&render_pass, images, &depth_buffer)
-            .unwrap_or_else(quit);
+            .unwrap_or_else(throw);
 
         Renderer {
             surface,
@@ -157,7 +158,7 @@ impl Renderer {
     fn new_dimensions(&self) -> ScreenDimensions {
         self.surface
             .capabilities(self.queue.device().physical_device())
-            .unwrap_or_else(quit)
+            .unwrap_or_else(throw)
             .current_extent
             .unwrap()
             .into()

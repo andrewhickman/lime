@@ -9,9 +9,10 @@ license = "MIT/Apache-2.0"
 readme = "README.md"
 
 [workspace]
-members = ["lime-main-loop", "lime-render", "lime-ui"]
+members = ["lime-main-loop", "lime-render", "lime-ui", "lime-utils"]
 
 [dependencies]
 lime-main-loop = { path = "lime-main-loop", version = "0.1.0" }
 lime-render = { path = "lime-render", version = "0.1.0" }
 lime-ui = { path = "lime-ui", version = "0.1.0" }
+lime-utils = { path = "lime-utils", version = "0.1.0" }

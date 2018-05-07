@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use failure;
 use specs::shred::Resources;
+use utils::throw;
 use vulkano::buffer::{BufferUsage, CpuBufferPool};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::descriptor::descriptor_set::FixedSizeDescriptorSetsPool;
@@ -16,7 +17,7 @@ use vulkano::framebuffer::{RenderPassAbstract, Subpass};
 use vulkano::pipeline::GraphicsPipeline;
 use vulkano::pipeline::vertex::SingleBufferDefinition;
 
-use {quit, Color};
+use ::Color;
 
 pub trait Draw {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color));
@@ -52,8 +53,8 @@ impl Renderer {
         device: &Arc<Device>,
         subpass: Subpass<Arc<RenderPassAbstract + Send + Sync>>,
     ) -> Self {
-        let vs = vs::Shader::load(Arc::clone(device)).unwrap_or_else(quit);
-        let fs = fs::Shader::load(Arc::clone(device)).unwrap_or_else(quit);
+        let vs = vs::Shader::load(Arc::clone(device)).unwrap_or_else(throw);
+        let fs = fs::Shader::load(Arc::clone(device)).unwrap_or_else(throw);
 
         let pipe = Arc::new(
             GraphicsPipeline::start()
@@ -64,7 +65,7 @@ impl Renderer {
                 .fragment_shader(fs.main_entry_point(), ())
                 .render_pass(subpass)
                 .build(Arc::clone(device))
-                .unwrap_or_else(quit),
+                .unwrap_or_else(throw),
         );
 
         let vbuf = {

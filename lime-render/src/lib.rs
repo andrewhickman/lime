@@ -1,4 +1,5 @@
 extern crate failure;
+extern crate lime_utils as utils;
 #[macro_use]
 extern crate log;
 extern crate shrev;
@@ -22,12 +23,3 @@ pub use self::color::Color;
 pub use self::render::Renderer;
 pub use self::sys::Bundle;
 pub use self::dim::ScreenDimensions;
-
-/// Utility function to panic with a payload of a failure::Error.
-fn quit<F: Into<failure::Error>, T>(err: F) -> T {
-    panic!(err.into())
-}
-
-fn quit_msg<S: Into<String>, T>(msg: S) -> T {
-    quit(failure::err_msg(msg.into()))
-}

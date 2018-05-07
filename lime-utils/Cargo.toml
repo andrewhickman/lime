@@ -1,0 +1,9 @@
+[package]
+name = "lime-utils"
+version = "0.1.0"
+authors = ["Andrew Hickman <andrew.hickman1@sky.com>"]
+
+[dependencies]
+backtrace = "0.3.7"
+failure = "0.1.1"
+log = "0.4.1"
