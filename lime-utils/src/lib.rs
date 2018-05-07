@@ -40,14 +40,13 @@ fn fmt_payload(payload: &(Any + Send)) -> String {
     } else if let Some(s) = payload.downcast_ref::<String>() {
         s.clone()
     } else if let Some(e) = payload.downcast_ref::<failure::Error>() {
-        pretty_error(&e)
+        fmt_error(&e)
     } else {
         "Box<Any>".into()
     }
 }
 
-/// Return a prettily formatted error, including its entire causal chain.
-pub fn pretty_error(err: &failure::Error) -> String {
+fn fmt_error(err: &failure::Error) -> String {
     let mut pretty = err.to_string();
     let mut prev = err.cause();
     while let Some(next) = prev.cause() {

@@ -64,7 +64,7 @@ impl Root {
     }
 }
 
-pub fn add<E>(world: &mut World, elem: E) -> EntityBuilder
+pub fn add<E>(res: &mut World, elem: E) -> EntityBuilder
 where
     E: Element + Send + Sync + 'static,
 {

@@ -33,11 +33,10 @@ impl Layout for Rect {
         use cassowary::{strength::*, WeightedRelation::*};
 
         solver.add_constraint(this.bottom |EQ(REQUIRED)| parent.bottom).unwrap();
-        solver.add_constraint(this.top |EQ(REQUIRED)| parent.top).unwrap();
+        solver.add_constraint(this.top |EQ(REQUIRED)| 100.0).unwrap();
     }
 
     fn resize(&mut self, resize: &Resize) {
-        println!("resize: {:?}", resize);
         fn update(old: &mut f32, new: Option<f64>) {
             if let Some(new) = new {
                 *old = new as f32;

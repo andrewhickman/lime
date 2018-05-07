@@ -82,21 +82,19 @@ impl<'a> System<'a> for LayoutSystem {
 
     fn run(&mut self, (tx, mut elems, vars): Self::SystemData) {
         if let Some(sz) = tx.read(&mut self.rx).last() {
-            self.changes.extend(self.solver.fetch_changes().iter().cloned());
             self.solver
                 .suggest_value(self.width, sz.width() as f64)
                 .unwrap();
-            self.changes.extend(self.solver.fetch_changes().iter().cloned());
             self.solver
                 .suggest_value(self.height, sz.height() as f64)
                 .unwrap();
+
             self.changes.extend(self.solver.fetch_changes().iter().cloned());
-            println!("changes: {:?}", self.changes);
             for (elem, var) in (&mut elems, &vars).join() {
                 let resize = Resize {
                     left: self.changes.get(&var.left).cloned(),
                     right: self.changes.get(&var.right).cloned(),
-                    top: Some(self.solver.get_value(var.top)),//self.changes.get(&var.top).cloned(),
+                    top: self.changes.get(&var.top).cloned(),
                     bottom: self.changes.get(&var.bottom).cloned(),
                 };
 
@@ -122,6 +120,7 @@ impl LayoutSystem {
         let (dim, mut tx, root, elems, vars) = Data::fetch(res);
 
         let mut solver = Solver::new();
+        let changes = HashMap::new();
         let width = Variable::new();
         let height = Variable::new();
         let zero = Variable::new();
@@ -143,9 +142,6 @@ impl LayoutSystem {
         for &ent in &root.stack {
             add_constraints(&elems, &vars, ent, &screen_vars, &mut solver);
         }
-
-        let changes = solver.fetch_changes().iter().cloned().collect();
-        println!("changes: {:?}", changes);
 
         LayoutSystem {
             solver,
