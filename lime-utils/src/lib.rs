@@ -12,7 +12,7 @@ use backtrace::Backtrace;
 #[cold]
 #[inline(never)]
 /// Panic with a payload of a failure::Error.
-pub fn throw<F: Into<failure::Error>, T>(err: F) -> T {
+pub fn throw<E: Into<failure::Error>, T>(err: E) -> T {
     panic!(err.into())
 }
 

@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use specs::world;
 
-use {elem, layout};
+use elem;
 
 pub struct Bundle {
     root: elem::Root,
@@ -19,6 +19,5 @@ impl world::Bundle for Bundle {
     fn add_to_world(self, world: &mut World) {
         world.add_resource(self.root);
         world.register::<elem::ElementComponent>();
-        world.register::<layout::LayoutVars>();
     }
 }
