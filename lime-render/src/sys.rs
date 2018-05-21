@@ -1,6 +1,6 @@
 use shrev::EventChannel;
 use specs::prelude::*;
-use specs::world;
+use winit::{EventsLoop, WindowBuilder};
 
 use {Renderer, ScreenDimensions, d2, d3};
 
@@ -19,31 +19,15 @@ impl<'a> RunNow<'a> for Renderer {
     fn setup(&mut self, _: &mut Resources) {}
 }
 
-impl Renderer {
-    pub fn bundle<D3, D2>(&self, d3: D3, d2: D2) -> Bundle
-    where
-        D3: d3::Draw + Send + Sync + 'static,
-        D2: d2::Draw + Send + Sync + 'static,
-    {
-        Bundle {
-            dim: self.dimensions(),
-            d2: Box::new(d2),
-            d3: Box::new(d3),
-        }
-    }
-}
-
-pub struct Bundle {
-    dim: ScreenDimensions,
-    d3: Box<d3::Draw + Send + Sync>,
-    d2: Box<d2::Draw + Send + Sync>,
-}
-
-impl world::Bundle for Bundle {
-    fn add_to_world(self, world: &mut World) {
-        world.add_resource(self.dim);
-        world.add_resource(self.d3);
-        world.add_resource(self.d2);
-        world.add_resource(EventChannel::<ScreenDimensions>::new());
-    }
+pub fn init<D3, D2>(world: &mut World, events_loop: &EventsLoop, builder: WindowBuilder, d3: D3, d2: D2) -> Renderer
+where
+    D3: d3::Draw + Send + Sync + 'static,
+    D2: d2::Draw + Send + Sync + 'static,
+{
+    let renderer = Renderer::new(events_loop, builder);
+    world.add_resource(renderer.dimensions());
+    world.add_resource::<Box<d3::Draw + Send + Sync>>(Box::new(d3));
+    world.add_resource::<Box<d2::Draw + Send + Sync>>(Box::new(d2));
+    world.add_resource(EventChannel::<ScreenDimensions>::new());
+    renderer
 }

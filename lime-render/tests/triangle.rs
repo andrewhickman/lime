@@ -29,9 +29,8 @@ impl d2::Draw for D2 {
 fn triangle() {
     let mut events_loop = EventsLoop::new();
     let builder = WindowBuilder::new();
-    let mut renderer = Renderer::new(&events_loop, builder);
     let mut world = World::new();
-    world.add_bundle(renderer.bundle(D3, D2));
+    let mut renderer = render::init(&mut world, &events_loop, builder, D3, D2);
 
     let mut quit = false;
     while !quit {

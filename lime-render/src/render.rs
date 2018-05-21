@@ -28,10 +28,11 @@ pub struct Renderer {
     render_pass: Arc<RenderPassAbstract + Send + Sync>,
     last_frame: Option<Box<GpuFuture + Send + Sync>>,
     framebuffers: Vec<Arc<FramebufferAbstract + Send + Sync>>,
+    swapchain_dirty: bool,
 }
 
 impl Renderer {
-    pub fn new(events_loop: &EventsLoop, builder: WindowBuilder) -> Self {
+    pub(crate) fn new(events_loop: &EventsLoop, builder: WindowBuilder) -> Self {
         let instance = {
             let extensions = vulkano_win::required_extensions();
             Instance::new(None, &extensions, None).unwrap_or_else(throw)
@@ -148,6 +149,7 @@ impl Renderer {
             last_frame: None,
             d2,
             d3,
+            swapchain_dirty: false,
         }
     }
 
@@ -175,13 +177,12 @@ impl Renderer {
             last_frame.cleanup_finished();
         }
 
-        let mut swapchain_dirty = false;
         for _ in 0..5 {
-            if swapchain_dirty {
+            if self.swapchain_dirty {
                 match self.recreate_swapchain(res, dim) {
                     Ok(()) => {
                         trace!("Recreate swapchain succeeded.");
-                        swapchain_dirty = false;
+                        self.swapchain_dirty = false;
                     }
                     Err(err) => {
                         trace!("Recreate swapchain failed: {}.", err);
@@ -196,7 +197,7 @@ impl Renderer {
                     }
                     Err(err) => {
                         trace!("Draw failed: {}.", err);
-                        swapchain_dirty = true;
+                        self.swapchain_dirty = true;
                     }
                 }
             }
