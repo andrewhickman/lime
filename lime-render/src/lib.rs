@@ -20,6 +20,6 @@ mod render;
 mod sys;
 
 pub use self::color::Color;
+pub use self::dim::ScreenDimensions;
 pub use self::render::Renderer;
 pub use self::sys::init;
-pub use self::dim::ScreenDimensions;

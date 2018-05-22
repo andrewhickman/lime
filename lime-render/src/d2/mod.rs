@@ -14,10 +14,10 @@ use vulkano::descriptor::descriptor_set::FixedSizeDescriptorSetsPool;
 use vulkano::descriptor::PipelineLayoutAbstract;
 use vulkano::device::Device;
 use vulkano::framebuffer::{RenderPassAbstract, Subpass};
-use vulkano::pipeline::GraphicsPipeline;
 use vulkano::pipeline::vertex::SingleBufferDefinition;
+use vulkano::pipeline::GraphicsPipeline;
 
-use ::Color;
+use Color;
 
 pub trait Draw {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color));
@@ -80,7 +80,12 @@ impl Renderer {
 
         let pool = FixedSizeDescriptorSetsPool::new(Arc::clone(&pipe), 0);
 
-        Renderer { pipe, vbuf, ubuf, pool }
+        Renderer {
+            pipe,
+            vbuf,
+            ubuf,
+            pool,
+        }
     }
 
     pub(crate) fn draw<D: Draw>(
@@ -97,7 +102,7 @@ impl Renderer {
         });
         let vbuf = self.vbuf.chunk(vbuf)?;
         let ubuf = self.ubuf.next(vs::ty::Data {
-            dimensions: state.viewports.as_ref().unwrap()[0].dimensions
+            dimensions: state.viewports.as_ref().unwrap()[0].dimensions,
         })?;
         let set = self.pool.next().add_buffer(ubuf)?.build()?;
 

@@ -31,7 +31,12 @@ pub fn hook(info: &PanicInfo) {
     let thread = thread::current();
     let name = thread.name().unwrap_or("<unnamed>");
 
-    error!("thread '{}' panicked at '{}'\n{:#?}", name, msg, Backtrace::new());
+    error!(
+        "thread '{}' panicked at '{}'\n{:#?}",
+        name,
+        msg,
+        Backtrace::new()
+    );
 }
 
 fn fmt_payload(payload: &(Any + Send)) -> String {

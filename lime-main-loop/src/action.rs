@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::time::Instant;
 
-use ::SECOND;
+use SECOND;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub(crate) enum Action {

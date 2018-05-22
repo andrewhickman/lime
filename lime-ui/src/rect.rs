@@ -1,21 +1,22 @@
-use cassowary::{strength::*, Constraint, WeightedRelation::*};
 use render::d2::{Draw, Point};
 use render::Color;
 use specs::prelude::*;
 
-use layout::{LayoutVars, Resize};
-use {Element, Layout, ElementComponent};
+use {Element, Layout, Resize};
 
 pub struct Rect {
     tl: Point,
     br: Point,
     color: Color,
-    vars: LayoutVars,
 }
 
 impl Rect {
-    pub fn new(tl: Point, br: Point, color: Color) -> Self {
-        Rect { tl, br, color, vars: LayoutVars::new() }
+    pub fn new(color: Color) -> Self {
+        Rect {
+            tl: Point::origin(),
+            br: Point::origin(),
+            color,
+        }
     }
 }
 
@@ -30,18 +31,6 @@ impl Draw for Rect {
 }
 
 impl Layout for Rect {
-    fn layout_vars(&self) -> &LayoutVars {
-        &self.vars
-    }
-
-    fn constraints(
-        &self,
-        _: &WriteStorage<ElementComponent>,
-        screen: &LayoutVars,
-    ) -> Vec<Constraint> { 
-        vec![self.vars.right |EQ(REQUIRED)| screen.right - 100.0]
-    }
-
     fn resize(&mut self, resize: &Resize) {
         fn update(old: &mut f32, new: Option<f64>) {
             if let Some(new) = new {

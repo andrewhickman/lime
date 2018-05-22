@@ -8,8 +8,8 @@ mod ticker;
 
 use std::collections::BinaryHeap;
 use std::sync::mpsc;
-use std::time::{Duration, Instant};
 use std::thread;
+use std::time::{Duration, Instant};
 
 use winit::{ControlFlow, DeviceEvent, Event, EventsLoop, EventsLoopProxy, WindowEvent};
 
@@ -36,15 +36,9 @@ where
     let mut events_loop = EventsLoop::new();
     let mut app = build(&events_loop);
 
-    let intervals: [Duration; Action::COUNT] = [
-        SECOND / A::UPDATES_PER_SECOND,
-        SECOND / A::RENDERS_PER_SECOND,
-        SECOND,
-    ];
-
     let (tx, rx) = mpsc::channel();
     let proxy = events_loop.create_proxy();
-    thread::spawn(move || wakeup(proxy, tx, &intervals));
+    thread::spawn(move || wakeup::<A>(proxy, tx));
 
     let mut update_ticker = Ticker::new();
     let mut render_ticker = Ticker::new();
@@ -71,14 +65,14 @@ where
     })
 }
 
-fn wakeup(
-    proxy: EventsLoopProxy,
-    tx: mpsc::Sender<QueuedAction>,
-    intervals: &[Duration; Action::COUNT],
-) {
-    let mut heap: BinaryHeap<_> = Action::values()
-        .map(QueuedAction::new)
-        .collect();
+fn wakeup<A: App>(proxy: EventsLoopProxy, tx: mpsc::Sender<QueuedAction>) {
+    let intervals: [Duration; Action::COUNT] = [
+        SECOND / A::UPDATES_PER_SECOND,
+        SECOND / A::RENDERS_PER_SECOND,
+        SECOND,
+    ];
+
+    let mut heap: BinaryHeap<_> = Action::values().map(QueuedAction::new).collect();
 
     loop {
         let QueuedAction(action, time) = heap.pop().unwrap();

@@ -2,7 +2,7 @@ extern crate lime_render as render;
 extern crate specs;
 extern crate winit;
 
-use render::{Color, Renderer, d2, d3};
+use render::{d2, d3, Color};
 use specs::prelude::*;
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 

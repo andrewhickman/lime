@@ -1,5 +1,5 @@
-use std::time::{Duration, Instant};
 use std::mem;
+use std::time::{Duration, Instant};
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Ticker {

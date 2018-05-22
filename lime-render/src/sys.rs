@@ -2,7 +2,7 @@ use shrev::EventChannel;
 use specs::prelude::*;
 use winit::{EventsLoop, WindowBuilder};
 
-use {Renderer, ScreenDimensions, d2, d3};
+use {d2, d3, Renderer, ScreenDimensions};
 
 type RenderData<'a> = (
     ReadExpect<'a, Box<d3::Draw + Send + Sync>>,
@@ -19,7 +19,13 @@ impl<'a> RunNow<'a> for Renderer {
     fn setup(&mut self, _: &mut Resources) {}
 }
 
-pub fn init<D3, D2>(world: &mut World, events_loop: &EventsLoop, builder: WindowBuilder, d3: D3, d2: D2) -> Renderer
+pub fn init<D3, D2>(
+    world: &mut World,
+    events_loop: &EventsLoop,
+    builder: WindowBuilder,
+    d3: D3,
+    d2: D2,
+) -> Renderer
 where
     D3: d3::Draw + Send + Sync + 'static,
     D2: d2::Draw + Send + Sync + 'static,

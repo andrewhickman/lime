@@ -17,7 +17,7 @@ use vulkano::sync::GpuFuture;
 use vulkano_win::{self, VkSurfaceBuild};
 use winit::{EventsLoop, Window, WindowBuilder};
 
-use {ScreenDimensions, d2, d3};
+use {d2, d3, ScreenDimensions};
 
 pub struct Renderer {
     pub(crate) d2: d2::Renderer,
@@ -137,8 +137,8 @@ impl Renderer {
 
         let depth_buffer = AttachmentImage::transient(Arc::clone(queue.device()), [w, h], D16Unorm)
             .unwrap_or_else(throw);
-        let framebuffers = create_framebuffers(&render_pass, images, &depth_buffer)
-            .unwrap_or_else(throw);
+        let framebuffers =
+            create_framebuffers(&render_pass, images, &depth_buffer).unwrap_or_else(throw);
 
         Renderer {
             surface,
@@ -214,8 +214,7 @@ impl Renderer {
         self.swapchain = swapchain;
         let depth_buffer =
             AttachmentImage::transient(Arc::clone(self.queue.device()), new_dim.into(), D16Unorm)?;
-        self.framebuffers =
-            create_framebuffers(&self.render_pass, images, &depth_buffer)?;
+        self.framebuffers = create_framebuffers(&self.render_pass, images, &depth_buffer)?;
         *dim = new_dim;
         res.fetch_mut::<EventChannel<ScreenDimensions>>()
             .single_write(new_dim);
@@ -234,13 +233,11 @@ impl Renderer {
 
         let state = DynamicState {
             line_width: None,
-            viewports: Some(vec![
-                Viewport {
-                    origin: [0.0, 0.0],
-                    dimensions: [dim.w as f32, dim.h as f32],
-                    depth_range: 0.0..1.0,
-                },
-            ]),
+            viewports: Some(vec![Viewport {
+                origin: [0.0, 0.0],
+                dimensions: [dim.w as f32, dim.h as f32],
+                depth_range: 0.0..1.0,
+            }]),
             scissors: None,
         };
 
