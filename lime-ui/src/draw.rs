@@ -1,32 +1,32 @@
-use render::d2::{Draw, Point};
-use render::Color;
 use specs::prelude::*;
+use render::Color;
+use render::d2::{Draw, Point};
 
-use {elem, Element, ElementComponent};
+use {tree, Root, Position, Node};
+
+#[derive(Component)]
+pub enum Brush {
+    Color(Color),
+}
 
 pub struct DrawUi;
 
-type DrawData<'a> = (
-    ReadExpect<'a, elem::Root>,
-    ReadStorage<'a, ElementComponent>,
+type Data<'a> = (
+    ReadExpect<'a, Root>,
+    Entities<'a>,
+    ReadStorage<'a, Node>,
+    ReadStorage<'a, Position>,
+    ReadStorage<'a, Brush>,
 );
 
 impl Draw for DrawUi {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
-        let (root, elems) = DrawData::fetch(res);
-        for &elem in &root.stack {
-            visit_children(&elems, elem, &mut |e| e.draw(res, visitor));
-        }
-    }
-}
-
-fn visit_children<F>(store: &ReadStorage<ElementComponent>, elem: Entity, visitor: &mut F)
-where
-    F: FnMut(&Element),
-{
-    let elem: &Element = store.get(elem).unwrap();
-    visitor(elem);
-    for &child in elem.children().iter() {
-        visit_children(store, child, visitor)
+        let (root, ents, nodes, poss, brushes) = Data::fetch(res);
+        let mut join = (&poss, &brushes).join();
+        tree::walk(root.entity(), &nodes, &mut |ent| if let Some((pos, brush)) = join.get(ent, &ents) {
+            match *brush {
+                Brush::Color(color) => visitor(&pos.tris(), color),
+            }
+        });
     }
 }

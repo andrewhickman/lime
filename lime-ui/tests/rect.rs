@@ -1,5 +1,4 @@
 extern crate cassowary;
-extern crate chan;
 extern crate env_logger;
 extern crate lime_render as render;
 extern crate lime_ui as ui;
@@ -8,12 +7,9 @@ extern crate specs;
 extern crate winit;
 
 use cassowary::strength::*;
-use cassowary::WeightedRelation::*;
 use render::{d3, Color};
 use specs::prelude::*;
-use ui::elem::Root;
-use ui::layout::{ConstraintUpdate, Constraints, PositionVars, ScreenVars};
-use ui::{DrawUi, ElementComponent, Rect};
+use ui::{DrawUi, Node, Root, Brush, Position, Constraints};
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 pub struct D3;
@@ -25,42 +21,32 @@ impl d3::Draw for D3 {
 #[test]
 fn rect() {
     env_logger::init();
-    std::panic::set_hook(Box::new(utils::hook));
+    std::panic::set_hook(Box::new(utils::panic_hook));
 
     let mut events_loop = EventsLoop::new();
     let builder = WindowBuilder::new();
     let mut world = World::new();
-    let mut renderer = render::init(&mut world, &events_loop, builder, D3, DrawUi);
+    let renderer = render::init(&mut world, &events_loop, builder, D3, DrawUi);
     let layout_sys = ui::init(&mut world);
 
     let mut dispatcher = DispatcherBuilder::new()
         .with_thread_local(layout_sys)
+        .with_thread_local(renderer)
         .build();
+    
+    let root = world.read_resource::<Root>().entity();
 
-    let screen_vars: ScreenVars = *world.read_resource::<ScreenVars>();
-    let vars = PositionVars::new();
-    let constraints = Constraints::from_iter(
-        world
-            .read_resource::<chan::Sender<ConstraintUpdate>>()
-            .clone(),
-        vars.min_size((300.0, 500.0), STRONG).chain(vec![
-            vars.left | EQ(WEAK) | 200.0,
-            vars.right | EQ(WEAK) | screen_vars.width - 200.0,
-            vars.top | EQ(WEAK) | 100.0,
-            vars.bottom | EQ(WEAK) | screen_vars.height - 100.0,
-            vars.left | EQ(REQUIRED) | screen_vars.width - vars.right,
-            vars.top | EQ(REQUIRED) | screen_vars.height - vars.bottom,
-        ]),
-    );
+    let pos = Position::new();
+    let cons = {
+        let poss = world.read_storage::<Position>();
+        Constraints::new(pos.min_size((200.0, 400.0), STRONG).chain(pos.center(poss.get(root).unwrap(), REQUIRED)).collect())
+    };
 
-    let entity = world
-        .create_entity()
-        .with::<ElementComponent>(Box::new(Rect::new(Color::RED)))
-        .with(constraints)
-        .with(vars)
+    Node::with_parent(world.create_entity(), root)
+        .with(pos)
+        .with(cons)
+        .with(Brush::Color(Color::RED))
         .build();
-
-    world.write_resource::<Root>().push(entity);
 
     let mut quit = false;
     while !quit {
@@ -74,7 +60,6 @@ fn rect() {
             };
         });
 
-        renderer.run_now(&mut world.res);
         dispatcher.dispatch(&world.res);
     }
 }

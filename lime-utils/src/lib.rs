@@ -26,7 +26,7 @@ pub fn throw_msg<S: Into<String>, T>(msg: S) -> T {
 #[cold]
 #[inline(never)]
 /// Custom panic hook that accepts a failure::Error.
-pub fn hook(info: &PanicInfo) {
+pub fn panic_hook(info: &PanicInfo) {
     let msg = fmt_payload(info.payload());
     let thread = thread::current();
     let name = thread.name().unwrap_or("<unnamed>");
