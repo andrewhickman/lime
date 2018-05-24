@@ -9,15 +9,28 @@ extern crate winit;
 mod common;
 
 use cassowary::strength::*;
-use render::Color;
+use render::{Color};
 use specs::prelude::*;
 use ui::{Brush, Constraints, DrawUi, Node, Position, Root};
+use ui::layout::Grid;
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 use common::D3;
 
+fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Color) -> Entity {
+    let pos = Position::new();
+    let mut cons = Constraints::new(pos.min_size((0.0, 0.0), STRONG).collect());
+    world.read_storage::<Grid>().get(parent).unwrap().insert(col, row, &pos, &mut cons);
+
+    Node::with_parent(world.create_entity(), parent)
+        .with(pos)
+        .with(cons)
+        .with(Brush::Color(color))
+        .build()
+}
+
 #[test]
-fn rect() {
+fn grid() {
     env_logger::init();
     std::panic::set_hook(Box::new(utils::panic_hook));
 
@@ -33,22 +46,16 @@ fn rect() {
         .build();
 
     let root = world.read_resource::<Root>().entity();
+    {
+        let poss = world.read_storage();
+        let (grid, cons) = Grid::new(poss.get(root).unwrap(), 2, 3);
+        world.write_storage().insert(root, grid).unwrap();
+        world.write_storage().insert(root, cons).unwrap();
+    }
 
-    let pos = Position::new();
-    let cons = {
-        let poss = world.read_storage::<Position>();
-        Constraints::new(
-            pos.min_size((200.0, 400.0), STRONG)
-                .chain(pos.center(poss.get(root).unwrap(), REQUIRED))
-                .collect(),
-        )
-    };
-
-    Node::with_parent(world.create_entity(), root)
-        .with(pos)
-        .with(cons)
-        .with(Brush::Color(Color::RED))
-        .build();
+    create_rect(&mut world, root, 0, 0, Color::RED);
+    create_rect(&mut world, root, 1, 1, Color::GREEN);
+    create_rect(&mut world, root, 0, 2, Color::BLUE);
 
     let mut quit = false;
     while !quit {

@@ -7,11 +7,10 @@ extern crate shrev;
 extern crate specs;
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate specs_derive;
+
+pub mod layout;
 
 mod draw;
-mod layout;
 mod tree;
 
 pub use self::draw::{Brush, DrawUi};
@@ -25,6 +24,7 @@ pub fn init(world: &mut World) -> LayoutSystem {
     world.register::<Position>();
     world.register::<Node>();
     world.register::<Brush>();
+    world.register::<layout::Grid>();
 
     let root = Root::new(world);
     world.add_resource(root);

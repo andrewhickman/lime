@@ -1,9 +1,13 @@
 use specs::prelude::*;
 
-#[derive(Component, Debug)]
+#[derive(Debug)]
 pub struct Node {
     parent: Option<Entity>,
     children: Vec<Entity>,
+}
+
+impl Component for Node {
+    type Storage = DenseVecStorage<Self>;
 }
 
 impl Node {
@@ -65,8 +69,11 @@ impl Root {
 
 #[test]
 fn test_tree() {
-    #[derive(Component)]
     struct Comp(i32);
+
+    impl Component for Comp {
+        type Storage = DenseVecStorage<Self>;
+    }
 
     let mut world = World::new();
     world.register::<Node>();

@@ -6,11 +6,14 @@ use fnv::FnvHashMap;
 use render::d2::Point;
 use specs::prelude::*;
 
-#[derive(Component)]
 pub struct Position {
     // Order: left, top, right, bottom
     vars: [Variable; 4],
     vals: [f32; 4],
+}
+
+impl Component for Position {
+    type Storage = DenseVecStorage<Self>;
 }
 
 impl Position {

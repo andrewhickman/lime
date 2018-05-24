@@ -4,9 +4,12 @@ use specs::prelude::*;
 
 use {tree, Node, Position, Root};
 
-#[derive(Component)]
 pub enum Brush {
     Color(Color),
+}
+
+impl Component for Brush {
+    type Storage = DenseVecStorage<Self>;
 }
 
 pub struct DrawUi;

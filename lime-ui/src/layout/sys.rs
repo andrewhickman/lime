@@ -23,22 +23,20 @@ impl LayoutSystem {
     pub(crate) fn new(world: &mut World) -> Self {
         let dims = world.read_resource::<ScreenDimensions>();
         let root = world.read_resource::<Root>();
-        let mut cons = world.write_storage::<Constraints>();
         let mut poss = world.write_storage::<Position>();
         let mut dims_tx = world.write_resource::<EventChannel<ScreenDimensions>>();
 
         let mut solver = Solver::new();
+
         let zero = Variable::new();
+        solver.add_constraint(zero | EQ(REQUIRED) | 0.0).unwrap();
         let width = Variable::new();
         solver.add_edit_variable(width, REQUIRED - 1.0).unwrap();
         let height = Variable::new();
         solver.add_edit_variable(height, REQUIRED - 1.0).unwrap();
+
         poss.insert(root.entity(), Position::root(zero, width, height))
             .unwrap_or_else(throw);
-        cons.insert(
-            root.entity(),
-            Constraints::new(vec![zero | EQ(REQUIRED) | 0.0]),
-        ).unwrap_or_else(throw);
 
         let mut sys = LayoutSystem {
             solver,
