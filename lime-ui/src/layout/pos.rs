@@ -1,7 +1,7 @@
 use std::iter;
 
-use cassowary::{Constraint, Expression, Variable};
 use cassowary::WeightedRelation::*;
+use cassowary::{Constraint, Expression, Variable};
 use fnv::FnvHashMap;
 use render::d2::Point;
 use specs::prelude::*;
@@ -74,19 +74,34 @@ impl Position {
     }
 
     pub fn tris(&self) -> [Point; 6] {
-        [self.bl(), self.tl(), self.br(), self.br(), self.tl(), self.tr()]
+        [
+            self.bl(),
+            self.tl(),
+            self.br(),
+            self.br(),
+            self.tl(),
+            self.tr(),
+        ]
     }
 
     pub fn center(&self, other: &Position, strength: f64) -> impl Iterator<Item = Constraint> {
         iter::empty()
-            .chain(iter::once(self.left() - other.left() |EQ(strength)| other.right() - self.right()))
-            .chain(iter::once(self.top() - other.top() |EQ(strength)| other.bottom() - self.bottom()))
+            .chain(iter::once(
+                self.left() - other.left() | EQ(strength) | other.right() - self.right(),
+            ))
+            .chain(iter::once(
+                self.top() - other.top() | EQ(strength) | other.bottom() - self.bottom(),
+            ))
     }
 
-    pub fn min_size(&self, (width, height): (f64, f64), strength: f64) -> impl Iterator<Item = Constraint> {
+    pub fn min_size(
+        &self,
+        (width, height): (f64, f64),
+        strength: f64,
+    ) -> impl Iterator<Item = Constraint> {
         iter::empty()
-            .chain(iter::once(self.width() |GE(strength)| width))
-            .chain(iter::once(self.height() |GE(strength)| height))
+            .chain(iter::once(self.width() | GE(strength) | width))
+            .chain(iter::once(self.height() | GE(strength) | height))
     }
 
     pub(in layout) fn update(&mut self, changes: &FnvHashMap<Variable, f64>) {

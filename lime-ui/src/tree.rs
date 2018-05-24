@@ -8,10 +8,14 @@ pub struct Node {
 
 impl Node {
     pub fn add_child(node: Entity, parent: Entity, store: &mut WriteStorage<Node>) -> Self {
-        store.get_mut(parent).expect("Invalid parent.").children.push(node);
+        store
+            .get_mut(parent)
+            .expect("Invalid parent.")
+            .children
+            .push(node);
         Node {
             parent: Some(parent),
-            children: Vec::new()
+            children: Vec::new(),
         }
     }
 
@@ -30,7 +34,7 @@ impl Node {
 
 pub fn walk<F>(cur: Entity, nodes: &ReadStorage<Node>, visit: &mut F)
 where
-    F: FnMut(Entity)
+    F: FnMut(Entity),
 {
     if let Some(node) = nodes.get(cur) {
         visit(cur);
@@ -63,12 +67,13 @@ impl Root {
 fn test_tree() {
     #[derive(Component)]
     struct Comp(i32);
-    
+
     let mut world = World::new();
     world.register::<Node>();
     world.register::<Comp>();
 
-    let n0 = world.create_entity()
+    let n0 = world
+        .create_entity()
         .with(Node::root())
         .with(Comp(0))
         .build();
