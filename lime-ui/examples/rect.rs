@@ -16,8 +16,7 @@ use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 use common::D3;
 
-#[test]
-fn rect() {
+fn main() {
     env_logger::init();
     std::panic::set_hook(Box::new(utils::panic_hook));
 

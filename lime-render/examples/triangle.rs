@@ -25,8 +25,7 @@ impl d2::Draw for D2 {
     }
 }
 
-#[test]
-fn triangle() {
+fn main() {
     let mut events_loop = EventsLoop::new();
     let builder = WindowBuilder::new();
     let mut world = World::new();

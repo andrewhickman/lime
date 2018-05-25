@@ -6,6 +6,7 @@ use fnv::FnvHashMap;
 use render::d2::Point;
 use specs::prelude::*;
 
+#[derive(Debug)]
 pub struct Position {
     // Order: left, top, right, bottom
     vars: [Variable; 4],

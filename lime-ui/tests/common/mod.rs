@@ -1,8 +1,24 @@
-use render::{d3, Color};
+extern crate env_logger;
+
+use std::panic;
+
+use render::ScreenDimensions;
 use specs::prelude::*;
+use shrev::EventChannel;
+use {utils, ui};
 
-pub struct D3;
+pub fn init_layout(dims: ScreenDimensions) -> (World, Dispatcher<'static, 'static>) {
+    env_logger::try_init().ok();
+    panic::set_hook(Box::new(utils::panic_hook));
 
-impl d3::Draw for D3 {
-    fn draw(&self, _: &Resources, _: &mut FnMut(&d3::Mesh, Color)) {}
+    let mut world = World::new();
+    world.add_resource(dims);
+    world.add_resource::<EventChannel<ScreenDimensions>>(Default::default());
+    let layout_sys = ui::init(&mut world);
+
+    let dispatcher = DispatcherBuilder::new()
+        .with_thread_local(layout_sys)
+        .build();
+
+    (world, dispatcher)
 }

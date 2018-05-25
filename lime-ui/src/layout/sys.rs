@@ -92,6 +92,7 @@ impl<'a> System<'a> for LayoutSystem {
 
     fn run(&mut self, (dims_tx, mut cons, mut poss): Self::SystemData) {
         if let Some(dims) = dims_tx.read(&mut self.dims_rx).last() {
+            trace!("Resizing ui to '({}, {})'.", dims.width(), dims.height());
             let LayoutSystem { width, height, .. } = self;
             self.resize(*width, dims.width());
             self.resize(*height, dims.height());
@@ -104,9 +105,12 @@ impl<'a> System<'a> for LayoutSystem {
 
         self.changes
             .extend(self.solver.fetch_changes().iter().cloned());
-        for pos in (&mut poss).join() {
-            pos.update(&self.changes);
+        if !self.changes.is_empty() {
+            trace!("Applying {} changes.", self.changes.len());
+            for pos in (&mut poss).join() {
+                pos.update(&self.changes);
+            }
+            self.changes.clear();
         }
-        self.changes.clear();
     }
 }
