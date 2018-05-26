@@ -1,8 +1,6 @@
-use std::iter;
-
-use cassowary::strength::*;
+use cassowary::{Constraint, Expression, Variable};
 use cassowary::WeightedRelation::*;
-use cassowary::{Constraint, Variable};
+use cassowary::strength::*;
 use specs::prelude::*;
 
 use super::{Constraints, Position};
@@ -12,51 +10,98 @@ pub struct Grid {
     cols: Vec<Variable>,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum Size {
+    // Absolute size.
+    Abs(f64),
+    // Relative size.
+    Rel(f64),
+    // Space required is decided by children.
+    Auto,
+}
+
 impl Component for Grid {
     type Storage = HashMapStorage<Self>;
 }
 
 impl Grid {
-    pub fn new(pos: &Position, ncols: u32, nrows: u32) -> (Self, Constraints) {
-        let rows = vars(pos.top(), nrows, pos.bottom());
-        let cols = vars(pos.left(), ncols, pos.right());
-        let cons = Constraints::new(cons(&rows).chain(cons(&cols)).collect());
+    pub fn new(
+        pos: &Position,
+        cols: impl IntoIterator<Item = Size>,
+        rows: impl IntoIterator<Item = Size>,
+    ) -> (Self, Constraints) {
+        let rows = rows.into_iter();
+        let cols = cols.into_iter();
+        let mut cons = Vec::with_capacity(rows.size_hint().0 + cols.size_hint().0 + 4);
+        let rows = layout(pos.top(), rows, pos.bottom(), &mut cons);
+        let cols = layout(pos.left(), cols, pos.right(), &mut cons);
+        let cons = Constraints::new(cons);
         (Grid { rows, cols }, cons)
     }
 
     pub fn insert(&self, col: u32, row: u32, pos: &Position, cons: &mut Constraints) {
-        cons.add(
-            iter::empty()
-                .chain(iter::once(
-                    pos.left() | EQ(REQUIRED) | self.cols[col as usize],
-                ))
-                .chain(iter::once(
-                    pos.top() | EQ(REQUIRED) | self.rows[row as usize],
-                ))
-                .chain(iter::once(
-                    pos.right() | EQ(REQUIRED) | self.cols[(col + 1) as usize],
-                ))
-                .chain(iter::once(
-                    pos.bottom() | EQ(REQUIRED) | self.rows[(row + 1) as usize],
-                )),
-        );
+        cons.add(vec![
+            pos.left() | EQ(REQUIRED) | self.cols[col as usize],
+            pos.top() | EQ(REQUIRED) | self.rows[row as usize],
+            pos.right() | EQ(REQUIRED) |
+                self.cols[(col + 1) as usize],
+            pos.bottom() | EQ(REQUIRED) |
+                self.rows[(row + 1) as usize],
+        ]);
     }
 }
 
-fn vars(start: Variable, len: u32, end: Variable) -> Vec<Variable> {
-    assert_ne!(len, 0);
-    let mut vars = Vec::with_capacity((len + 1) as usize);
+fn layout(
+    start: Variable,
+    mid: impl Iterator<Item = Size>,
+    end: Variable,
+    cons: &mut Vec<Constraint>,
+) -> Vec<Variable> {
+    let mut vars = Vec::with_capacity(mid.size_hint().0 + 2);
+    let mut size_sum = Expression::from_constant(0.0);
+    let mut ratio_sum = 0.0;
+    let rem = Variable::new();
+    let mut flex_str = 0.0;
+
     vars.push(start);
-    for _ in 0..(len - 1) {
-        vars.push(Variable::new());
-    }
-    vars.push(end);
-    vars
-}
+    let mut prev = start;
+    for size in mid {
+        let var = Variable::new();
+        vars.push(var);
+        cons.push(prev | LE(REQUIRED) | var);
 
-fn cons<'a>(vars: &'a [Variable]) -> impl Iterator<Item = Constraint> + 'a {
-    let lt = vars.windows(2).map(|vs| vs[0] | LE(REQUIRED) | vs[1]);
-    let sz = Variable::new();
-    let eq = vars.windows(2).map(move |vs| vs[1] - vs[0] | EQ(WEAK) | sz);
-    lt.chain(eq)
+        // Tie-breaker constraint. First columns are filled first.
+        cons.push(prev | EQ(flex_str) | var);
+        flex_str += 0.001;
+
+        match size {
+            Size::Abs(size) => {
+                cons.push(var - prev | EQ(STRONG) | size);
+                size_sum = size_sum + var - prev;
+            }
+            Size::Rel(ratio) => {
+                assert!(ratio > 0.0);
+                cons.push(var - prev | EQ(STRONG) | ratio * rem);
+                ratio_sum += ratio;
+            }
+            Size::Auto => {
+                size_sum = size_sum + var - prev;
+            }
+        }
+
+        prev = var;
+    }
+
+    assert!(vars.len() >= 2, "Grid must have at least one row and column.");
+
+    let mult = ratio_sum.recip();
+    if mult.is_normal() {
+        cons.push(rem | EQ(REQUIRED) | size_sum * mult);
+    } else {
+        // No relative sizes. Use flex space.
+        cons.push(start | EQ(flex_str) | prev);
+    }
+
+    cons.push(prev | LE(REQUIRED) | end);
+    vars
 }

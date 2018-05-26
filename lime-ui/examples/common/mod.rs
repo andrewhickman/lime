@@ -1,4 +1,4 @@
-use render::{d3, Color};
+use render::{Color, d3};
 use specs::prelude::*;
 
 pub struct D3;

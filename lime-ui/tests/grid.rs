@@ -9,29 +9,47 @@ extern crate shrev;
 
 mod common;
 
+use std::iter;
+
 use cassowary::strength::*;
-use specs::prelude::*;
-use shrev::EventChannel;
-use render::d2::Point;
 use render::ScreenDimensions;
+use render::d2::Point;
+use shrev::EventChannel;
+use specs::prelude::*;
 use ui::{Constraints, Node, Position, Root};
 use ui::layout::Grid;
+use ui::layout::grid::Size;
 
 use common::init_layout;
 
-fn create_grid(world: &mut World) -> Entity {
+fn create_grid(world: &mut World, ncols: usize, nrows: usize) -> Entity {
     let root = world.read_resource::<Root>().entity();
     let poss = world.read_storage();
-    let (grid, cons) = Grid::new(poss.get(root).unwrap(), 2, 3);
+    let (grid, cons) = Grid::new(
+        poss.get(root).unwrap(),
+        iter::repeat(Size::Auto).take(ncols),
+        iter::repeat(Size::Auto).take(nrows),
+    );
     world.write_storage().insert(root, grid).unwrap();
     world.write_storage().insert(root, cons).unwrap();
     root
 }
 
-fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, min_sz: (f64, f64)) -> Entity {
+fn create_rect(
+    world: &mut World,
+    parent: Entity,
+    col: u32,
+    row: u32,
+    min_sz: (f64, f64),
+) -> Entity {
     let pos = Position::new();
     let mut cons = Constraints::new(pos.min_size(min_sz, STRONG).collect());
-    world.read_storage::<Grid>().get(parent).unwrap().insert(col, row, &pos, &mut cons);
+    world.read_storage::<Grid>().get(parent).unwrap().insert(
+        col,
+        row,
+        &pos,
+        &mut cons,
+    );
 
     Node::with_parent(world.create_entity(), parent)
         .with(pos)
@@ -48,11 +66,11 @@ fn assert_approx_eq(l: Point, r: Point) {
 fn basic() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    let grid = create_grid(&mut world);
+    let grid = create_grid(&mut world, 2, 3);
 
-    let r1 = create_rect(&mut world, grid, 0, 0, (0.0, 0.0));
-    let r2 = create_rect(&mut world, grid, 1, 1, (0.0, 0.0));
-    let r3 = create_rect(&mut world, grid, 0, 2, (0.0, 0.0));
+    let r1 = create_rect(&mut world, grid, 0, 0, (100.0, 100.0));
+    let r2 = create_rect(&mut world, grid, 1, 1, (100.0, 100.0));
+    let r3 = create_rect(&mut world, grid, 0, 2, (100.0, 100.0));
 
     dispatcher.dispatch(&world.res);
 
@@ -60,29 +78,31 @@ fn basic() {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
         assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(500.0, 250.0));
+        assert_approx_eq(p1.br(), Point(100.0, 100.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(500.0, 250.0));
-        assert_approx_eq(p2.br(), Point(1000.0, 500.0));
+        assert_approx_eq(p2.tl(), Point(100.0, 100.0));
+        assert_approx_eq(p2.br(), Point(200.0, 200.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(0.0, 500.0));
-        assert_approx_eq(p3.br(), Point(500.0, 750.0));
+        assert_approx_eq(p3.tl(), Point(0.0, 200.0));
+        assert_approx_eq(p3.br(), Point(100.0, 300.0));
     }
 
-    world.write_resource::<EventChannel<ScreenDimensions>>().single_write([1200, 900].into());
+    world
+        .write_resource::<EventChannel<ScreenDimensions>>()
+        .single_write([1200, 900].into());
     dispatcher.dispatch(&world.res);
 
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
         assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(600.0, 300.0));
+        assert_approx_eq(p1.br(), Point(100.0, 100.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(600.0, 300.0));
-        assert_approx_eq(p2.br(), Point(1200.0, 600.0));
+        assert_approx_eq(p2.tl(), Point(100.0, 100.0));
+        assert_approx_eq(p2.br(), Point(200.0, 200.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(0.0, 600.0));
-        assert_approx_eq(p3.br(), Point(600.0, 900.0));
+        assert_approx_eq(p3.tl(), Point(0.0, 200.0));
+        assert_approx_eq(p3.br(), Point(100.0, 300.0));
     }
 }
 
@@ -90,7 +110,7 @@ fn basic() {
 fn min_sizes() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    let grid = create_grid(&mut world);
+    let grid = create_grid(&mut world, 2, 3);
 
     let r1 = create_rect(&mut world, grid, 0, 0, (300.0, 300.0));
     let r2 = create_rect(&mut world, grid, 1, 1, (600.0, 300.0));
@@ -102,28 +122,30 @@ fn min_sizes() {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
         assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(400.0, 250.0));
+        assert_approx_eq(p1.br(), Point(400.0, 300.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(400.0, 250.0));
-        assert_approx_eq(p2.br(), Point(1000.0, 500.0));
+        assert_approx_eq(p2.tl(), Point(400.0, 300.0));
+        assert_approx_eq(p2.br(), Point(1000.0, 600.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(0.0, 500.0));
+        assert_approx_eq(p3.tl(), Point(0.0, 600.0));
         assert_approx_eq(p3.br(), Point(400.0, 750.0));
     }
 
-    world.write_resource::<EventChannel<ScreenDimensions>>().single_write([1200, 1100].into());
+    world
+        .write_resource::<EventChannel<ScreenDimensions>>()
+        .single_write([1200, 1100].into());
     dispatcher.dispatch(&world.res);
 
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
         assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(600.0, 300.0));
+        assert_approx_eq(p1.br(), Point(400.0, 300.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(600.0, 300.0));
-        assert_approx_eq(p2.br(), Point(1200.0, 600.0));
+        assert_approx_eq(p2.tl(), Point(400.0, 300.0));
+        assert_approx_eq(p2.br(), Point(1000.0, 600.0));
         let p3 = comps.get(r3).unwrap();
         assert_approx_eq(p3.tl(), Point(0.0, 600.0));
-        assert_approx_eq(p3.br(), Point(600.0, 1100.0));
+        assert_approx_eq(p3.br(), Point(400.0, 1100.0));
     }
 }

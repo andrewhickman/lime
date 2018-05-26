@@ -8,11 +8,14 @@ extern crate winit;
 
 mod common;
 
+use std::iter;
+
 use cassowary::strength::*;
-use render::{Color};
+use render::Color;
 use specs::prelude::*;
 use ui::{Brush, Constraints, DrawUi, Node, Position, Root};
 use ui::layout::Grid;
+use ui::layout::grid::Size;
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 use common::D3;
@@ -20,7 +23,12 @@ use common::D3;
 fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Color) -> Entity {
     let pos = Position::new();
     let mut cons = Constraints::new(pos.min_size((100.0, 100.0), STRONG).collect());
-    world.read_storage::<Grid>().get(parent).unwrap().insert(col, row, &pos, &mut cons);
+    world.read_storage::<Grid>().get(parent).unwrap().insert(
+        col,
+        row,
+        &pos,
+        &mut cons,
+    );
 
     Node::with_parent(world.create_entity(), parent)
         .with(pos)
@@ -47,7 +55,11 @@ fn main() {
     let root = world.read_resource::<Root>().entity();
     {
         let poss = world.read_storage();
-        let (grid, cons) = Grid::new(poss.get(root).unwrap(), 2, 3);
+        let (grid, cons) = Grid::new(
+            poss.get(root).unwrap(),
+            iter::repeat(Size::Auto).take(2),
+            iter::repeat(Size::Auto).take(3),
+        );
         world.write_storage().insert(root, grid).unwrap();
         world.write_storage().insert(root, cons).unwrap();
     }
@@ -60,10 +72,7 @@ fn main() {
     while !quit {
         events_loop.poll_events(|event| {
             match event {
-                Event::WindowEvent {
-                    event: WindowEvent::Closed,
-                    ..
-                } => quit = true,
+                Event::WindowEvent { event: WindowEvent::Closed, .. } => quit = true,
                 _ => (),
             };
         });

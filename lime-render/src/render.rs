@@ -289,14 +289,11 @@ impl Renderer {
     }
 }
 
-fn create_framebuffers<I>(
+fn create_framebuffers(
     pass: &Arc<RenderPassAbstract + Send + Sync>,
-    images: I,
+    images: impl IntoIterator<Item = Arc<SwapchainImage<Window>>>,
     dbuf: &Arc<AttachmentImage<D16Unorm>>,
-) -> Result<Vec<Arc<FramebufferAbstract + Send + Sync>>, failure::Error>
-where
-    I: IntoIterator<Item = Arc<SwapchainImage<Window>>>,
-{
+) -> Result<Vec<Arc<FramebufferAbstract + Send + Sync>>, failure::Error> {
     images
         .into_iter()
         .map(|img| create_framebuffer(pass, img, dbuf))

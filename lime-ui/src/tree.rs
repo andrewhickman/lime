@@ -57,9 +57,7 @@ pub struct Root {
 
 impl Root {
     pub(crate) fn new(world: &mut World) -> Self {
-        Root {
-            ent: world.create_entity().with(Node::root()).build(),
-        }
+        Root { ent: world.create_entity().with(Node::root()).build() }
     }
 
     pub fn entity(&self) -> Entity {

@@ -1,14 +1,14 @@
-use cassowary::strength::REQUIRED;
-use cassowary::WeightedRelation::*;
 use cassowary::{Constraint, Solver, Variable};
+use cassowary::WeightedRelation::*;
+use cassowary::strength::REQUIRED;
 use fnv::FnvHashMap;
 use render::ScreenDimensions;
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
 use utils::{throw, throw_msg};
 
-use layout::cons::{ConstraintStorage, ConstraintUpdate};
 use layout::{Constraints, Position};
+use layout::cons::{ConstraintStorage, ConstraintUpdate};
 use tree::Root;
 
 pub struct LayoutSystem {
@@ -84,11 +84,9 @@ impl LayoutSystem {
 }
 
 impl<'a> System<'a> for LayoutSystem {
-    type SystemData = (
-        ReadExpect<'a, EventChannel<ScreenDimensions>>,
-        WriteStorage<'a, Constraints>,
-        WriteStorage<'a, Position>,
-    );
+    type SystemData = (ReadExpect<'a, EventChannel<ScreenDimensions>>,
+     WriteStorage<'a, Constraints>,
+     WriteStorage<'a, Position>);
 
     fn run(&mut self, (dims_tx, mut cons, mut poss): Self::SystemData) {
         if let Some(dims) = dims_tx.read(&mut self.dims_rx).last() {
@@ -103,8 +101,9 @@ impl<'a> System<'a> for LayoutSystem {
             ConstraintUpdate::Remove(con) => self.remove_constraint(con),
         });
 
-        self.changes
-            .extend(self.solver.fetch_changes().iter().cloned());
+        self.changes.extend(
+            self.solver.fetch_changes().iter().cloned(),
+        );
         if !self.changes.is_empty() {
             trace!("Applying {} changes.", self.changes.len());
             for pos in (&mut poss).join() {

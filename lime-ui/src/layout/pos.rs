@@ -1,7 +1,7 @@
 use std::iter;
 
-use cassowary::WeightedRelation::*;
 use cassowary::{Constraint, Expression, Variable};
+use cassowary::WeightedRelation::*;
 use fnv::FnvHashMap;
 use render::d2::Point;
 use specs::prelude::*;
@@ -91,10 +91,12 @@ impl Position {
     pub fn center(&self, other: &Position, strength: f64) -> impl Iterator<Item = Constraint> {
         iter::empty()
             .chain(iter::once(
-                self.left() - other.left() | EQ(strength) | other.right() - self.right(),
+                self.left() - other.left() | EQ(strength) |
+                    other.right() - self.right(),
             ))
             .chain(iter::once(
-                self.top() - other.top() | EQ(strength) | other.bottom() - self.bottom(),
+                self.top() - other.top() | EQ(strength) |
+                    other.bottom() - self.bottom(),
             ))
     }
 

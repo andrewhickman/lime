@@ -1,5 +1,6 @@
+pub mod grid;
+
 mod cons;
-mod grid;
 mod pos;
 mod sys;
 

@@ -2,10 +2,10 @@ extern crate env_logger;
 
 use std::panic;
 
+use {ui, utils};
 use render::ScreenDimensions;
-use specs::prelude::*;
 use shrev::EventChannel;
-use {utils, ui};
+use specs::prelude::*;
 
 pub fn init_layout(dims: ScreenDimensions) -> (World, Dispatcher<'static, 'static>) {
     env_logger::try_init().ok();
