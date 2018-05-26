@@ -92,16 +92,15 @@ fn layout(
         prev = var;
     }
 
-    assert!(vars.len() >= 2, "Grid must have at least one row and column.");
-
     let mult = ratio_sum.recip();
     if mult.is_normal() {
-        cons.push(rem | EQ(REQUIRED) | size_sum * mult);
+        cons.push(rem | EQ(REQUIRED) | (end - size_sum - start) * mult);
+        cons.push(prev | EQ(REQUIRED) | end);
     } else {
         // No relative sizes. Use flex space.
         cons.push(start | EQ(flex_str) | prev);
+        cons.push(prev | LE(REQUIRED) | end);
     }
 
-    cons.push(prev | LE(REQUIRED) | end);
     vars
 }
