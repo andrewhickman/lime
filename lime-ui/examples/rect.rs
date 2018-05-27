@@ -11,7 +11,7 @@ mod common;
 use cassowary::strength::*;
 use render::Color;
 use specs::prelude::*;
-use ui::{Brush, Constraints, DrawUi, Node, Position, Root};
+use ui::{Brush, DrawUi, Node, Position, Root};
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 use common::D3;
@@ -36,11 +36,10 @@ fn main() {
     let pos = Position::new();
     let cons = {
         let poss = world.read_storage::<Position>();
-        Constraints::new(
-            pos.min_size((200.0, 400.0), STRONG)
-                .chain(pos.center(poss.get(root).unwrap(), REQUIRED))
-                .collect(),
-        )
+        pos.constraints_builder()
+            .min_size((100.0, 100.0), STRONG)
+            .center(poss.get(root).unwrap(), STRONG)
+            .build()
     };
 
     Node::with_parent(world.create_entity(), root)

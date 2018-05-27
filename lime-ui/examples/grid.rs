@@ -13,7 +13,7 @@ use std::iter;
 use cassowary::strength::*;
 use render::Color;
 use specs::prelude::*;
-use ui::{Brush, Constraints, DrawUi, Node, Position, Root};
+use ui::{Brush, DrawUi, Node, Position, Root};
 use ui::layout::Grid;
 use ui::layout::grid::Size;
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
@@ -22,7 +22,9 @@ use common::D3;
 
 fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Color) -> Entity {
     let pos = Position::new();
-    let mut cons = Constraints::new(pos.min_size((100.0, 100.0), STRONG).collect());
+    let mut cons = pos.constraints_builder()
+        .min_size((100.0, 100.0), STRONG)
+        .build();
     world.read_storage::<Grid>().get(parent).unwrap().insert(
         col,
         row,
