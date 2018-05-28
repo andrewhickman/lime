@@ -22,7 +22,7 @@ use ui::layout::grid::Size;
 
 use common::init_layout;
 
-fn create_grid(
+fn create_root_grid(
     world: &mut World,
     cols: impl IntoIterator<Item = Size>,
     rows: impl IntoIterator<Item = Size>,
@@ -33,6 +33,21 @@ fn create_grid(
     world.write_storage().insert(root, grid).unwrap();
     world.write_storage().insert(root, cons).unwrap();
     root
+}
+
+fn create_grid(
+    world: &mut World,
+    cols: impl IntoIterator<Item = Size>,
+    rows: impl IntoIterator<Item = Size>,
+) -> Entity {
+    let root = world.read_resource::<Root>().entity();
+    let pos = Position::new();
+    let (grid, cons) = Grid::new(&pos, cols, rows);
+    Node::with_parent(world.create_entity(), root)
+        .with(pos)
+        .with(grid)
+        .with(cons)
+        .build()
 }
 
 fn create_rect(
@@ -66,7 +81,7 @@ fn assert_approx_eq(l: Point, r: Point) {
 fn empty() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    create_grid(&mut world, iter::empty(), iter::empty());
+    create_root_grid(&mut world, iter::empty(), iter::empty());
 
     dispatcher.dispatch(&world.res);
 }
@@ -75,7 +90,7 @@ fn empty() {
 fn basic() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    let grid = create_grid(
+    let grid = create_root_grid(
         &mut world,
         iter::repeat(Size::Auto).take(2),
         iter::repeat(Size::Auto).take(3),
@@ -141,7 +156,7 @@ fn basic() {
 fn auto() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    let grid = create_grid(
+    let grid = create_root_grid(
         &mut world,
         iter::repeat(Size::Auto).take(2),
         iter::repeat(Size::Auto).take(3),
@@ -207,7 +222,7 @@ fn auto() {
 fn abs() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    let grid = create_grid(
+    let grid = create_root_grid(
         &mut world,
         vec![Size::Abs(500.0), Size::Abs(500.0)],
         vec![Size::Abs(500.0), Size::Abs(500.0)],
@@ -260,7 +275,7 @@ fn abs() {
 fn rel() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    let grid = create_grid(
+    let grid = create_root_grid(
         &mut world,
         vec![Size::Rel(1.0), Size::Rel(1.0), Size::Rel(2.0)],
         vec![Size::Rel(1.0), Size::Rel(2.0)],
@@ -326,7 +341,7 @@ fn rel() {
 fn mix() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    let grid = create_grid(
+    let grid = create_root_grid(
         &mut world,
         vec![
             Size::Abs(100.0),
@@ -399,5 +414,24 @@ fn mix() {
         let p5 = comps.get(r5).unwrap();
         assert_approx_eq(p5.tl(), Point(550.0, 0.0));
         assert_approx_eq(p5.br(), Point(1150.0, 300.0));
+    }
+}
+
+#[test]
+fn size() {
+    let (mut world, mut dispatcher) = init_layout([1000, 750].into());
+
+    let grid = create_grid(&mut world, vec![Size::Auto, Size::Rel(1.0), Size::Rel(2.0)], vec![Size::Auto, Size::Auto]);
+
+    create_rect(&mut world, grid, 0, 0, |bld| bld.size((200.0, 200.0), STRONG));
+    create_rect(&mut world, grid, 1, 1, |bld| bld.size((200.0, 300.0), STRONG));
+
+    dispatcher.dispatch(&world.res);
+
+    {
+        let comps = world.read_storage::<Position>();
+        let g = comps.get(grid).unwrap();
+        assert_ulps_eq!(g.br().0 - g.tl().0, 800.0);
+        assert_ulps_eq!(g.br().1 - g.tl().1, 500.0);
     }
 }

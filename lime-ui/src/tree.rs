@@ -14,7 +14,7 @@ impl Node {
     pub fn add_child(node: Entity, parent: Entity, store: &mut WriteStorage<Node>) -> Self {
         store
             .get_mut(parent)
-            .expect("Invalid parent.")
+            .expect("invalid parent")
             .children
             .push(node);
         Node {
