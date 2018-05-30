@@ -52,7 +52,10 @@ fn main() {
     while !quit {
         events_loop.poll_events(|event| {
             match event {
-                Event::WindowEvent { event: WindowEvent::Closed, .. } => quit = true,
+                Event::WindowEvent {
+                    event: WindowEvent::Closed,
+                    ..
+                } => quit = true,
                 _ => (),
             };
         });

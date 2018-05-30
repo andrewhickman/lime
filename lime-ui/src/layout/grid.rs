@@ -1,6 +1,6 @@
-use cassowary::{Constraint, Expression, Variable};
-use cassowary::WeightedRelation::*;
 use cassowary::strength::*;
+use cassowary::WeightedRelation::*;
+use cassowary::{Constraint, Expression, Variable};
 use specs::prelude::*;
 
 use super::{Constraints, Position};
@@ -32,7 +32,7 @@ impl Grid {
     ) -> (Self, Constraints) {
         let rows = rows.into_iter();
         let cols = cols.into_iter();
-        let mut cons = Vec::with_capacity(rows.size_hint().0 + cols.size_hint().0 + 4);
+        let mut cons = Vec::with_capacity(2 * rows.size_hint().0 + 2 * cols.size_hint().0 + 4);
         let rows = layout(pos.top(), rows, pos.bottom(), &mut cons);
         let cols = layout(pos.left(), cols, pos.right(), &mut cons);
         let cons = Constraints::new(cons);
@@ -43,10 +43,8 @@ impl Grid {
         cons.add(vec![
             pos.left() | EQ(REQUIRED) | self.cols[col as usize],
             pos.top() | EQ(REQUIRED) | self.rows[row as usize],
-            pos.right() | EQ(REQUIRED) |
-                self.cols[(col + 1) as usize],
-            pos.bottom() | EQ(REQUIRED) |
-                self.rows[(row + 1) as usize],
+            pos.right() | EQ(REQUIRED) | self.cols[(col + 1) as usize],
+            pos.bottom() | EQ(REQUIRED) | self.rows[(row + 1) as usize],
         ]);
     }
 }

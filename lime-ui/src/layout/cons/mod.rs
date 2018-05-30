@@ -27,26 +27,27 @@ impl Constraints {
         self.cons.extend(iter);
         let range = old_len..self.cons.len();
         self.updates.extend(
-            self.cons[range.clone()].iter().cloned().map(
-                ConstraintUpdate::Add,
-            ),
+            self.cons[range.clone()]
+                .iter()
+                .cloned()
+                .map(ConstraintUpdate::Add),
         );
         range
     }
 
     pub fn remove<'a>(&'a mut self, range: Range<usize>) -> impl Iterator<Item = Constraint> + 'a {
         self.updates.extend(
-            self.cons[range.clone()].iter().cloned().map(
-                ConstraintUpdate::Remove,
-            ),
+            self.cons[range.clone()]
+                .iter()
+                .cloned()
+                .map(ConstraintUpdate::Remove),
         );
         self.cons.drain(range)
     }
 
     pub fn clear(&mut self) {
-        self.updates.extend(self.cons.drain(..).map(
-            ConstraintUpdate::Remove,
-        ))
+        self.updates
+            .extend(self.cons.drain(..).map(ConstraintUpdate::Remove))
     }
 }
 

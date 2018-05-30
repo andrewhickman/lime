@@ -7,13 +7,16 @@ extern crate shrev;
 extern crate specs;
 #[macro_use]
 extern crate log;
+extern crate winit;
 
+pub mod event;
 pub mod layout;
+pub mod tree;
 
 mod draw;
-mod tree;
 
 pub use self::draw::{Brush, DrawUi};
+pub use self::event::Event;
 pub use self::layout::{Constraints, LayoutSystem, Position};
 pub use self::tree::{Node, Root};
 

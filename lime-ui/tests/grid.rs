@@ -1,24 +1,24 @@
 #[macro_use]
 extern crate approx;
 extern crate cassowary;
+extern crate lime_render as render;
 extern crate lime_ui as ui;
 extern crate lime_utils as utils;
-extern crate lime_render as render;
-extern crate specs;
 extern crate shrev;
+extern crate specs;
 
 mod common;
 
 use std::iter;
 
 use cassowary::strength::*;
-use render::ScreenDimensions;
 use render::d2::Point;
+use render::ScreenDimensions;
 use shrev::EventChannel;
 use specs::prelude::*;
-use ui::{Node, Position, Root};
-use ui::layout::{ConstraintsBuilder, Grid};
 use ui::layout::grid::Size;
+use ui::layout::{ConstraintsBuilder, Grid};
+use ui::{Node, Position, Root};
 
 use common::init_layout;
 
@@ -59,12 +59,11 @@ fn create_rect(
 ) -> Entity {
     let pos = Position::new();
     let mut cons = build(pos.constraints_builder()).build();
-    world.read_storage::<Grid>().get(parent).unwrap().insert(
-        col,
-        row,
-        &pos,
-        &mut cons,
-    );
+    world
+        .read_storage::<Grid>()
+        .get(parent)
+        .unwrap()
+        .insert(col, row, &pos, &mut cons);
 
     Node::with_parent(world.create_entity(), parent)
         .with(pos)
@@ -96,27 +95,15 @@ fn basic() {
         iter::repeat(Size::Auto).take(3),
     );
 
-    let r1 = create_rect(
-        &mut world,
-        grid,
-        0,
-        0,
-        |bld| bld.min_size((100.0, 100.0), STRONG),
-    );
-    let r2 = create_rect(
-        &mut world,
-        grid,
-        1,
-        1,
-        |bld| bld.min_size((100.0, 100.0), STRONG),
-    );
-    let r3 = create_rect(
-        &mut world,
-        grid,
-        0,
-        2,
-        |bld| bld.min_size((100.0, 100.0), STRONG),
-    );
+    let r1 = create_rect(&mut world, grid, 0, 0, |bld| {
+        bld.min_size((100.0, 100.0), STRONG)
+    });
+    let r2 = create_rect(&mut world, grid, 1, 1, |bld| {
+        bld.min_size((100.0, 100.0), STRONG)
+    });
+    let r3 = create_rect(&mut world, grid, 0, 2, |bld| {
+        bld.min_size((100.0, 100.0), STRONG)
+    });
 
     dispatcher.dispatch(&world.res);
 
@@ -162,27 +149,15 @@ fn auto() {
         iter::repeat(Size::Auto).take(3),
     );
 
-    let r1 = create_rect(
-        &mut world,
-        grid,
-        0,
-        0,
-        |bld| bld.min_size((300.0, 300.0), STRONG),
-    );
-    let r2 = create_rect(
-        &mut world,
-        grid,
-        1,
-        1,
-        |bld| bld.min_size((600.0, 300.0), STRONG),
-    );
-    let r3 = create_rect(
-        &mut world,
-        grid,
-        0,
-        2,
-        |bld| bld.min_size((400.0, 500.0), STRONG),
-    );
+    let r1 = create_rect(&mut world, grid, 0, 0, |bld| {
+        bld.min_size((300.0, 300.0), STRONG)
+    });
+    let r2 = create_rect(&mut world, grid, 1, 1, |bld| {
+        bld.min_size((600.0, 300.0), STRONG)
+    });
+    let r3 = create_rect(&mut world, grid, 0, 2, |bld| {
+        bld.min_size((400.0, 500.0), STRONG)
+    });
 
     dispatcher.dispatch(&world.res);
 
@@ -228,20 +203,12 @@ fn abs() {
         vec![Size::Abs(500.0), Size::Abs(500.0)],
     );
 
-    let r1 = create_rect(
-        &mut world,
-        grid,
-        0,
-        0,
-        |bld| bld.min_size((0.0, 0.0), STRONG),
-    );
-    let r2 = create_rect(
-        &mut world,
-        grid,
-        1,
-        1,
-        |bld| bld.min_size((0.0, 0.0), STRONG),
-    );
+    let r1 = create_rect(&mut world, grid, 0, 0, |bld| {
+        bld.min_size((0.0, 0.0), STRONG)
+    });
+    let r2 = create_rect(&mut world, grid, 1, 1, |bld| {
+        bld.min_size((0.0, 0.0), STRONG)
+    });
 
     dispatcher.dispatch(&world.res);
 
@@ -281,27 +248,15 @@ fn rel() {
         vec![Size::Rel(1.0), Size::Rel(2.0)],
     );
 
-    let r1 = create_rect(
-        &mut world,
-        grid,
-        0,
-        0,
-        |bld| bld.min_size((0.0, 0.0), STRONG),
-    );
-    let r2 = create_rect(
-        &mut world,
-        grid,
-        1,
-        1,
-        |bld| bld.min_size((0.0, 0.0), STRONG),
-    );
-    let r3 = create_rect(
-        &mut world,
-        grid,
-        2,
-        0,
-        |bld| bld.min_size((0.0, 0.0), STRONG),
-    );
+    let r1 = create_rect(&mut world, grid, 0, 0, |bld| {
+        bld.min_size((0.0, 0.0), STRONG)
+    });
+    let r2 = create_rect(&mut world, grid, 1, 1, |bld| {
+        bld.min_size((0.0, 0.0), STRONG)
+    });
+    let r3 = create_rect(&mut world, grid, 2, 0, |bld| {
+        bld.min_size((0.0, 0.0), STRONG)
+    });
 
     dispatcher.dispatch(&world.res);
 
@@ -354,20 +309,12 @@ fn mix() {
     );
 
     let r1 = create_rect(&mut world, grid, 1, 0, |bld| bld.min_width(100.0, STRONG));
-    let r2 = create_rect(
-        &mut world,
-        grid,
-        1,
-        1,
-        |bld| bld.size((150.0, 200.0), STRONG),
-    );
-    let r3 = create_rect(
-        &mut world,
-        grid,
-        1,
-        2,
-        |bld| bld.size((150.0, 200.0), STRONG),
-    );
+    let r2 = create_rect(&mut world, grid, 1, 1, |bld| {
+        bld.size((150.0, 200.0), STRONG)
+    });
+    let r3 = create_rect(&mut world, grid, 1, 2, |bld| {
+        bld.size((150.0, 200.0), STRONG)
+    });
     let r4 = create_rect(&mut world, grid, 2, 0, |bld| bld);
     let r5 = create_rect(&mut world, grid, 3, 0, |bld| bld);
 
@@ -421,10 +368,18 @@ fn mix() {
 fn size() {
     let (mut world, mut dispatcher) = init_layout([1000, 750].into());
 
-    let grid = create_grid(&mut world, vec![Size::Auto, Size::Rel(1.0), Size::Rel(2.0)], vec![Size::Auto, Size::Auto]);
+    let grid = create_grid(
+        &mut world,
+        vec![Size::Auto, Size::Rel(1.0), Size::Rel(2.0)],
+        vec![Size::Auto, Size::Auto],
+    );
 
-    create_rect(&mut world, grid, 0, 0, |bld| bld.size((200.0, 200.0), STRONG));
-    create_rect(&mut world, grid, 1, 1, |bld| bld.size((200.0, 300.0), STRONG));
+    create_rect(&mut world, grid, 0, 0, |bld| {
+        bld.size((200.0, 200.0), STRONG)
+    });
+    create_rect(&mut world, grid, 1, 1, |bld| {
+        bld.size((200.0, 300.0), STRONG)
+    });
 
     dispatcher.dispatch(&world.res);
 

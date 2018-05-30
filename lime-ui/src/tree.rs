@@ -36,37 +36,69 @@ impl Node {
     }
 }
 
-pub fn walk<F>(cur: Entity, nodes: &ReadStorage<Node>, visit: &mut F)
+pub fn walk<F>(cur: Entity, nodes: &ReadStorage<Node>, mut visit: F)
 where
     F: FnMut(Entity),
 {
+    walk_sc::<(), _>(cur, nodes, &mut |ent| Ok(visit(ent))).unwrap()
+}
+
+pub fn walk_sc<E, F>(cur: Entity, nodes: &ReadStorage<Node>, visit: &mut F) -> Result<(), E>
+where
+    F: FnMut(Entity) -> Result<(), E>,
+{
     if let Some(node) = nodes.get(cur) {
-        visit(cur);
+        visit(cur)?;
         for &ent in &node.children {
-            walk(ent, nodes, visit)
+            walk_sc(ent, nodes, visit)?;
         }
     } else {
         error!("Dead node in tree: {:?}.", cur);
     }
+    Ok(())
+}
+
+pub fn walk_rev<F>(cur: Entity, nodes: &ReadStorage<Node>, mut visit: F)
+where
+    F: FnMut(Entity),
+{
+    walk_sc_rev::<(), _>(cur, nodes, &mut |ent| Ok(visit(ent))).unwrap()
+}
+
+pub fn walk_sc_rev<E, F>(cur: Entity, nodes: &ReadStorage<Node>, visit: &mut F) -> Result<(), E>
+where
+    F: FnMut(Entity) -> Result<(), E>,
+{
+    if let Some(node) = nodes.get(cur) {
+        for &ent in node.children.iter().rev() {
+            walk_sc_rev(ent, nodes, visit)?;
+        }
+        visit(cur)?;
+    } else {
+        error!("Dead node in tree: {:?}.", cur);
+    }
+    Ok(())
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Root {
-    ent: Entity,
+    entity: Entity,
 }
 
 impl Root {
     pub(crate) fn new(world: &mut World) -> Self {
-        Root { ent: world.create_entity().with(Node::root()).build() }
+        Root {
+            entity: world.create_entity().with(Node::root()).build(),
+        }
     }
 
     pub fn entity(&self) -> Entity {
-        self.ent
+        self.entity
     }
 }
 
 #[test]
-fn test_tree() {
+fn test_walk() {
     struct Comp(i32);
 
     impl Component for Comp {
@@ -100,7 +132,12 @@ fn test_tree() {
 
     let comps = world.read_storage::<Comp>();
     let mut expected = 0..16;
-    walk(n0, &world.read_storage::<Node>(), &mut |ent| {
+    walk(n0, &world.read_storage::<Node>(), |ent| {
         assert_eq!(comps.get(ent).unwrap().0, expected.next().unwrap());
+    });
+
+    let mut expected_rev = (0..16).rev();
+    walk_rev(n0, &world.read_storage::<Node>(), |ent| {
+        assert_eq!(comps.get(ent).unwrap().0, expected_rev.next().unwrap());
     });
 }

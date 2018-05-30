@@ -1,5 +1,5 @@
-use cassowary::{Constraint, strength};
 use cassowary::WeightedRelation::*;
+use cassowary::{strength, Constraint};
 
 use {Constraints, Position};
 
@@ -23,12 +23,10 @@ impl<'a> ConstraintsBuilder<'a> {
     }
 
     pub fn center(mut self, other: &Position, strength: f64) -> Self {
-        self.cons.push(
-            self.pos.left() - other.left() | EQ(strength) | other.right() - self.pos.right(),
-        );
-        self.cons.push(
-            self.pos.top() - other.top() | EQ(strength) | other.bottom() - self.pos.bottom(),
-        );
+        self.cons
+            .push(self.pos.left() - other.left() | EQ(strength) | other.right() - self.pos.right());
+        self.cons
+            .push(self.pos.top() - other.top() | EQ(strength) | other.bottom() - self.pos.bottom());
         self
     }
 

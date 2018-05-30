@@ -21,9 +21,11 @@ impl ConstraintStorage {
             con.updates.drain(..).for_each(&mut handle);
         }
 
-        store.unprotected_storage_mut().updates.drain(..).for_each(
-            &mut handle,
-        );
+        store
+            .unprotected_storage_mut()
+            .updates
+            .drain(..)
+            .for_each(&mut handle);
     }
 }
 
