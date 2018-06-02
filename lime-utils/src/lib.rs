@@ -18,13 +18,6 @@ pub fn throw<E: Into<failure::Error>, T>(err: E) -> T {
 
 #[cold]
 #[inline(never)]
-/// Panic with an error message.
-pub fn throw_msg<S: Into<String>, T>(msg: S) -> T {
-    throw(failure::err_msg(msg.into()))
-}
-
-#[cold]
-#[inline(never)]
 /// Custom panic hook that accepts a failure::Error.
 pub fn panic_hook(info: &PanicInfo) {
     let msg = fmt_payload(info.payload());

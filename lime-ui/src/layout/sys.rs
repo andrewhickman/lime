@@ -5,7 +5,7 @@ use fnv::FnvHashMap;
 use render::ScreenDimensions;
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
-use utils::{throw, throw_msg};
+use utils::throw;
 
 use layout::cons::{ConstraintStorage, ConstraintUpdate};
 use layout::{Constraints, Position};
@@ -56,8 +56,8 @@ impl LayoutSystem {
 
         match self.solver.suggest_value(var, val.into()) {
             Ok(()) => (),
-            Err(UnknownEditVariable) => throw_msg(format!("Unknown edit variable {:?}", var)),
-            Err(InternalSolverError(msg)) => throw_msg(msg),
+            Err(UnknownEditVariable) => panic!("Unknown edit variable {:?}", var),
+            Err(InternalSolverError(msg)) => panic!(msg),
         }
     }
 
@@ -68,7 +68,7 @@ impl LayoutSystem {
             Ok(()) => (),
             Err(DuplicateConstraint) => error!("Constraint added twice: '{:#?}'.", con),
             Err(UnsatisfiableConstraint) => warn!("Unsatisfiable constraint '{:#?}'.", con),
-            Err(InternalSolverError(msg)) => throw_msg(msg),
+            Err(InternalSolverError(msg)) => panic!(msg),
         }
     }
 
@@ -78,7 +78,7 @@ impl LayoutSystem {
         match self.solver.remove_constraint(&con) {
             Ok(()) => (),
             Err(UnknownConstraint) => error!("Constraint removed twice: '{:#?}'.", con),
-            Err(InternalSolverError(msg)) => throw_msg(msg),
+            Err(InternalSolverError(msg)) => panic!(msg),
         }
     }
 }
