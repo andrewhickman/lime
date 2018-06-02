@@ -9,6 +9,7 @@ pub enum MouseEvent {
     Enter,
     Exit,
     Move(Point, ModifiersState),
+    MoveRaw(f64, f64),
     ButtonUp(MouseButton, ModifiersState),
     ButtonDown(MouseButton, ModifiersState),
 }
