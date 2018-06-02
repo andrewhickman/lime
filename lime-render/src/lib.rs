@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate approx;
 extern crate failure;
 extern crate lime_utils as utils;
 #[macro_use]
