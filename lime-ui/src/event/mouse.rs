@@ -4,7 +4,7 @@ use winit::{ElementState, ModifiersState, MouseButton};
 
 use {tree, Node, Position};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum MouseEvent {
     Enter,
     Exit,
@@ -19,6 +19,12 @@ pub struct MouseHover {
 }
 
 impl MouseHover {
+    pub(crate) fn new() -> Self {
+        MouseHover {
+            entity: None,
+        }
+    }
+
     pub fn entity(&self) -> Option<Entity> {
         self.entity
     }

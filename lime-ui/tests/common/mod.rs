@@ -7,7 +7,7 @@ use shrev::EventChannel;
 use specs::prelude::*;
 use {ui, utils};
 
-pub fn init_layout(dims: ScreenDimensions) -> (World, Dispatcher<'static, 'static>) {
+pub fn init(dims: ScreenDimensions) -> (World, Dispatcher<'static, 'static>) {
     env_logger::try_init().ok();
     panic::set_hook(Box::new(utils::panic_hook));
 

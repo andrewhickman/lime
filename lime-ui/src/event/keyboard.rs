@@ -1,7 +1,9 @@
 use specs::prelude::*;
 use winit::{ElementState, KeyboardInput, ModifiersState, VirtualKeyCode};
 
-#[derive(Copy, Clone, Debug)]
+use Root;
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum KeyboardEvent {
     KeyUp(VirtualKeyCode, ModifiersState),
     KeyDown(VirtualKeyCode, ModifiersState),
@@ -13,6 +15,12 @@ pub struct KeyboardFocus {
 }
 
 impl KeyboardFocus {
+    pub(crate) fn new(root: &Root) -> Self {
+        KeyboardFocus {
+            entity: root.entity(),
+        }
+    }
+
     pub fn set_entity(&mut self, entity: Entity) {
         self.entity = entity;
     }

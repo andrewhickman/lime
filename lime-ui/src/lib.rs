@@ -16,10 +16,11 @@ pub mod tree;
 mod draw;
 
 pub use self::draw::{Brush, DrawUi};
-pub use self::event::Event;
+pub use self::event::{Event, EventKind, EventSystem, KeyboardEvent, MouseEvent};
 pub use self::layout::{Constraints, LayoutSystem, Position};
 pub use self::tree::{Node, Root};
 
+use shrev::EventChannel;
 use specs::World;
 
 pub fn init(world: &mut World) -> LayoutSystem {
@@ -30,6 +31,9 @@ pub fn init(world: &mut World) -> LayoutSystem {
     world.register::<layout::Grid>();
 
     let root = Root::new(world);
+    world.add_resource(event::KeyboardFocus::new(&root));
+    world.add_resource(event::MouseHover::new());
     world.add_resource(root);
+    world.add_resource(EventChannel::<Event>::new());
     LayoutSystem::new(world)
 }

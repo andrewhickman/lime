@@ -8,10 +8,16 @@ pub use self::sys::EventSystem;
 
 use specs::prelude::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Event {
     pub kind: EventKind,
     pub entity: Entity,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum EventKind {
+    Keyboard(KeyboardEvent),
+    Mouse(MouseEvent),
 }
 
 impl Event {
@@ -28,10 +34,4 @@ impl Event {
             entity,
         }
     }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum EventKind {
-    Keyboard(KeyboardEvent),
-    Mouse(MouseEvent),
 }
