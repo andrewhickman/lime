@@ -1,10 +1,10 @@
 use render::d2::Point;
-use specs::prelude::*;
 use shrev::EventChannel;
+use specs::prelude::*;
 
-use winit::{self, DeviceEvent, ElementState, WindowEvent, ModifiersState, MouseButton};
+use winit::{self, DeviceEvent, ElementState, ModifiersState, MouseButton, WindowEvent};
 
-use event::{mouse, KeyboardFocus, KeyboardEvent, MouseEvent, MouseHover};
+use event::{mouse, KeyboardEvent, KeyboardFocus, MouseEvent, MouseHover};
 use {Event, Node, Position, Root};
 
 pub struct EventSystem<'a>(pub &'a winit::Event);
@@ -20,30 +20,40 @@ impl<'a> System<'a> for EventSystem<'a> {
         ReadStorage<'a, Position>,
     );
 
-    fn run(
-        &mut self,
-        data: Self::SystemData,
-    ) {
+    fn run(&mut self, data: Self::SystemData) {
         match *self.0 {
             winit::Event::WindowEvent { ref event, .. } => match *event {
                 WindowEvent::KeyboardInput { input, .. } => Self::keyboard_input(input, data),
                 WindowEvent::ReceivedCharacter(chr) => Self::received_character(chr, data),
-                WindowEvent::CursorMoved { position, modifiers, .. } => Self::cursor_moved(position, modifiers, data),
+                WindowEvent::CursorMoved {
+                    position,
+                    modifiers,
+                    ..
+                } => Self::cursor_moved(position, modifiers, data),
                 WindowEvent::CursorLeft { .. } => Self::cursor_left(data),
-                WindowEvent::MouseInput { state, button, modifiers, .. } => Self::mouse_input(state, button, modifiers, data),
+                WindowEvent::MouseInput {
+                    state,
+                    button,
+                    modifiers,
+                    ..
+                } => Self::mouse_input(state, button, modifiers, data),
                 _ => (),
             },
             winit::Event::DeviceEvent { ref event, .. } => match *event {
                 DeviceEvent::MouseMotion { delta, .. } => Self::mouse_motion(delta, data),
                 _ => (),
-            }
+            },
             _ => (),
         }
     }
 }
 
 impl<'a> EventSystem<'a> {
-    fn keyboard_focus(root: ReadExpect<'a, Root>, ents: Entities<'a>, kb_focus: ReadExpect<'a, KeyboardFocus>) -> Entity {
+    fn keyboard_focus(
+        root: ReadExpect<'a, Root>,
+        ents: Entities<'a>,
+        kb_focus: ReadExpect<'a, KeyboardFocus>,
+    ) -> Entity {
         if ents.is_alive(kb_focus.entity) {
             kb_focus.entity
         } else {
@@ -55,7 +65,7 @@ impl<'a> EventSystem<'a> {
 
     fn keyboard_input(
         input: winit::KeyboardInput,
-        (root, ents, kb_focus, _, mut events, _, _): <Self as System<'a>>::SystemData
+        (root, ents, kb_focus, _, mut events, _, _): <Self as System<'a>>::SystemData,
     ) {
         if let Some(event) = KeyboardEvent::from_input(input) {
             let ent = Self::keyboard_focus(root, ents, kb_focus);
@@ -65,7 +75,7 @@ impl<'a> EventSystem<'a> {
 
     fn received_character(
         chr: char,
-        (root, ents, kb_focus, _, mut events, _, _): <Self as System<'a>>::SystemData
+        (root, ents, kb_focus, _, mut events, _, _): <Self as System<'a>>::SystemData,
     ) {
         let ent = Self::keyboard_focus(root, ents, kb_focus);
         events.single_write(Event::keyboard(KeyboardEvent::Char(chr), ent));
@@ -74,7 +84,7 @@ impl<'a> EventSystem<'a> {
     fn cursor_moved(
         (x, y): (f64, f64),
         modifiers: ModifiersState,
-        (root, _, _, mut hover, mut events, nodes, poss): <Self as System<'a>>::SystemData
+        (root, _, _, mut hover, mut events, nodes, poss): <Self as System<'a>>::SystemData,
     ) {
         let point = Point(x as f32, y as f32);
         let entity = mouse::hit_test(root.entity(), point, &nodes, &poss);
@@ -94,9 +104,7 @@ impl<'a> EventSystem<'a> {
         }
     }
 
-    fn cursor_left(
-        (_, _, _, mut hover, mut events, _, _): <Self as System<'a>>::SystemData
-    ) {
+    fn cursor_left((_, _, _, mut hover, mut events, _, _): <Self as System<'a>>::SystemData) {
         if let Some(ent) = hover.entity {
             events.single_write(Event::mouse(MouseEvent::Exit, ent));
         }
@@ -107,7 +115,7 @@ impl<'a> EventSystem<'a> {
         state: ElementState,
         button: MouseButton,
         modifiers: ModifiersState,
-        (_, _, _, hover, mut events, _, _): <Self as System<'a>>::SystemData
+        (_, _, _, hover, mut events, _, _): <Self as System<'a>>::SystemData,
     ) {
         if let Some(ent) = hover.entity {
             events.single_write(Event::mouse(
@@ -119,13 +127,10 @@ impl<'a> EventSystem<'a> {
 
     fn mouse_motion(
         (x, y): (f64, f64),
-        (_, _, _, hover, mut events, _, _): <Self as System<'a>>::SystemData
+        (_, _, _, hover, mut events, _, _): <Self as System<'a>>::SystemData,
     ) {
         if let Some(ent) = hover.entity {
-            events.single_write(Event::mouse(
-                MouseEvent::MoveRaw(x, y),
-                ent,
-            ));
+            events.single_write(Event::mouse(MouseEvent::MoveRaw(x, y), ent));
         }
     }
 }

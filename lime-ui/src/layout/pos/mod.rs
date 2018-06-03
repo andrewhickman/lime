@@ -90,7 +90,9 @@ impl Position {
     }
 
     pub fn contains(&self, point: Point) -> bool {
-        self.vals[0] <= point.0 && point.0 < self.vals[2] && self.vals[1] <= point.1
+        self.vals[0] <= point.0
+            && point.0 < self.vals[2]
+            && self.vals[1] <= point.1
             && point.1 < self.vals[3]
     }
 

@@ -3,8 +3,9 @@ mod keyboard;
 mod mouse;
 mod sys;
 
-pub use self::button::{Button, ButtonEvent, ButtonSystem, RadioButton, ToggleButton,
-                       ToggleButtonEvent};
+pub use self::button::{
+    Button, ButtonEvent, ButtonSystem, RadioButton, ToggleButton, ToggleButtonEvent,
+};
 pub use self::keyboard::{KeyboardEvent, KeyboardFocus};
 pub use self::mouse::{MouseEvent, MouseHover};
 pub use self::sys::EventSystem;

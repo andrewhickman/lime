@@ -20,9 +20,7 @@ pub struct MouseHover {
 
 impl MouseHover {
     pub(crate) fn new() -> Self {
-        MouseHover {
-            entity: None,
-        }
+        MouseHover { entity: None }
     }
 
     pub fn entity(&self) -> Option<Entity> {
