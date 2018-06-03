@@ -8,7 +8,7 @@ use {Event, EventKind, MouseEvent};
 
 #[derive(Clone, Debug)]
 pub struct Button {
-    state: State,
+    state: ButtonState,
 }
 
 #[derive(Clone, Debug)]
@@ -22,7 +22,7 @@ pub struct RadioButton {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum State {
+pub enum ButtonState {
     Normal,
     Focused,
     Pressed,
@@ -32,13 +32,13 @@ pub enum State {
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct ButtonEvent {
     pub entity: Entity,
-    pub old: State,
-    pub new: State,
+    pub old: ButtonState,
+    pub new: ButtonState,
 }
 
 impl ButtonEvent {
     pub fn is_press(&self) -> bool {
-        self.new == State::Pressed
+        self.new == ButtonState::Pressed
     }
 }
 
@@ -82,7 +82,7 @@ impl<'a> System<'a> for ButtonSystem {
             };
 
             if let Some(btn) = btns.get_mut(event.entity) {
-                if let State::Disabled = btn.state {
+                if let ButtonState::Disabled = btn.state {
                     continue;
                 }
 
@@ -104,20 +104,20 @@ fn update_button_common<'a>(event: Event, btn: &mut Button) -> Option<ButtonEven
     let old = btn.state;
     let new = match event.kind {
         EventKind::Mouse(Enter) => {
-            debug_assert_eq!(old, State::Normal);
-            State::Focused
+            debug_assert_eq!(old, ButtonState::Normal);
+            ButtonState::Focused
         }
         EventKind::Mouse(Exit) => {
-            debug_assert_ne!(old, State::Normal);
-            State::Normal
+            debug_assert_ne!(old, ButtonState::Normal);
+            ButtonState::Normal
         }
         EventKind::Mouse(ButtonUp(MouseButton::Left, _)) => {
-            debug_assert_ne!(old, State::Normal);
-            State::Focused
+            debug_assert_ne!(old, ButtonState::Normal);
+            ButtonState::Focused
         }
         EventKind::Mouse(ButtonDown(MouseButton::Left, _)) => {
-            debug_assert_ne!(old, State::Normal);
-            State::Pressed
+            debug_assert_ne!(old, ButtonState::Normal);
+            ButtonState::Pressed
         }
         _ => return None,
     };
