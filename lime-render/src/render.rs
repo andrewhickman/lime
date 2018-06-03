@@ -4,7 +4,7 @@ use std::sync::Arc;
 use failure;
 use shrev::EventChannel;
 use specs::shred::Resources;
-use utils::{throw, throw_msg};
+use utils::throw;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::{Device, DeviceExtensions, Queue};
 use vulkano::format::{D16Unorm, Format};
@@ -40,17 +40,16 @@ impl Renderer {
 
         let phys = PhysicalDevice::enumerate(&instance)
             .next()
-            .unwrap_or_else(|| throw_msg("no device available"));
+            .expect("no device available");
         info!("Using device: {} (type: {:?}).", phys.name(), phys.ty());
 
         let surface = builder
             .build_vk_surface(&events_loop, Arc::clone(&instance))
             .unwrap_or_else(throw);
 
-        let queue_family = phys
-            .queue_families()
+        let queue_family = phys.queue_families()
             .find(|&q| q.supports_graphics() && surface.is_supported(q).unwrap_or(false))
-            .unwrap_or_else(|| throw_msg("couldn't find a graphical queue family"));
+            .expect("couldn't find a graphical queue family");
 
         let (_, mut queues) = {
             let device_ext = DeviceExtensions {
@@ -71,15 +70,13 @@ impl Renderer {
         let caps = surface
             .capabilities(queue.device().physical_device())
             .unwrap_or_else(throw);
-        let format = caps
-            .supported_formats
+        let format = caps.supported_formats
             .first()
-            .unwrap_or_else(|| throw_msg("surface has no supported formats"));
-        let alpha = caps
-            .supported_composite_alpha
+            .expect("surface has no supported formats");
+        let alpha = caps.supported_composite_alpha
             .iter()
             .next()
-            .unwrap_or_else(|| throw_msg("surface has no supported alpha modes"));
+            .expect("surface has no supported alpha modes");
 
         let (w, h) = surface.window().get_inner_size().unwrap();
         let (swapchain, images) = Swapchain::new(
@@ -252,12 +249,10 @@ impl Renderer {
             false,
             vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
         )?;
-        let command_buffer = self
-            .d3
+        let command_buffer = self.d3
             .draw(res, command_buffer, d3, state.clone())?
             .next_subpass(false)?;
-        let command_buffer = self
-            .d2
+        let command_buffer = self.d2
             .draw(res, command_buffer, d2, state)?
             .end_render_pass()?
             .build()?;

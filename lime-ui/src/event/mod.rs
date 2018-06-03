@@ -1,3 +1,4 @@
+mod button;
 mod keyboard;
 mod mouse;
 mod sys;
