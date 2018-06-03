@@ -9,11 +9,10 @@ extern crate specs;
 extern crate log;
 extern crate winit;
 
+pub mod draw;
 pub mod event;
 pub mod layout;
 pub mod tree;
-
-mod draw;
 
 pub use self::draw::{Brush, DrawUi};
 pub use self::event::{Event, EventKind, EventSystem, KeyboardEvent, MouseEvent};
@@ -28,6 +27,7 @@ pub fn init(world: &mut World) -> LayoutSystem {
     world.register::<Position>();
     world.register::<Node>();
     world.register::<Brush>();
+    world.register::<draw::Visibility>();
     world.register::<layout::Grid>();
 
     let root = Root::new(world);
@@ -35,5 +35,6 @@ pub fn init(world: &mut World) -> LayoutSystem {
     world.add_resource(event::MouseHover::new());
     world.add_resource(root);
     world.add_resource(EventChannel::<Event>::new());
+    world.add_resource(EventChannel::<draw::VisibilityEvent>::new());
     LayoutSystem::new(world)
 }

@@ -7,6 +7,7 @@ use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
 use utils::throw;
 
+use draw::VisibilityEvent;
 use layout::cons::{ConstraintStorage, ConstraintUpdate};
 use layout::{Constraints, Position};
 use tree::Root;
@@ -15,6 +16,7 @@ pub struct LayoutSystem {
     solver: Solver,
     changes: FnvHashMap<Variable, f64>,
     dims_rx: ReaderId<ScreenDimensions>,
+    vis_rx: ReaderId<VisibilityEvent>,
     width: Variable,
     height: Variable,
 }
@@ -25,6 +27,7 @@ impl LayoutSystem {
         let root = world.read_resource::<Root>();
         let mut poss = world.write_storage::<Position>();
         let mut dims_tx = world.write_resource::<EventChannel<ScreenDimensions>>();
+        let mut vis_tx = world.write_resource::<EventChannel<VisibilityEvent>>();
 
         let mut solver = Solver::new();
 
@@ -42,6 +45,7 @@ impl LayoutSystem {
             solver,
             changes: FnvHashMap::default(),
             dims_rx: dims_tx.register_reader(),
+            vis_rx: vis_tx.register_reader(),
             width,
             height,
         };
@@ -77,7 +81,7 @@ impl LayoutSystem {
 
         match self.solver.remove_constraint(&con) {
             Ok(()) => (),
-            Err(UnknownConstraint) => error!("Constraint removed twice: '{:#?}'.", con),
+            Err(UnknownConstraint) => (), // Can happen when collapsed element is added.
             Err(InternalSolverError(msg)) => panic!(msg),
         }
     }
@@ -86,16 +90,29 @@ impl LayoutSystem {
 impl<'a> System<'a> for LayoutSystem {
     type SystemData = (
         ReadExpect<'a, EventChannel<ScreenDimensions>>,
+        ReadExpect<'a, EventChannel<VisibilityEvent>>,
         WriteStorage<'a, Constraints>,
         WriteStorage<'a, Position>,
     );
 
-    fn run(&mut self, (dims_tx, mut cons, mut poss): Self::SystemData) {
+    fn run(&mut self, (dims_tx, vis_tx, mut cons, mut poss): Self::SystemData) {
         if let Some(dims) = dims_tx.read(&mut self.dims_rx).last() {
             trace!("Resizing ui to '({}, {})'.", dims.width(), dims.height());
             let LayoutSystem { width, height, .. } = self;
             self.resize(*width, dims.width());
             self.resize(*height, dims.height());
+        }
+
+        for vis_ev in vis_tx.read(&mut self.vis_rx) {
+            if let Some(needs_layout) = vis_ev.needs_layout_changed() {
+                if let Some(con) = cons.get_mut(vis_ev.entity) {
+                    if needs_layout {
+                        con.expand();
+                    } else {
+                        con.collapse();
+                    }
+                }
+            }
         }
 
         ConstraintStorage::handle_updates(&mut cons, |update| match update {
@@ -106,7 +123,7 @@ impl<'a> System<'a> for LayoutSystem {
         self.changes
             .extend(self.solver.fetch_changes().iter().cloned());
         if !self.changes.is_empty() {
-            trace!("Applying {} changes.", self.changes.len());
+            trace!("Applying {} layout changes.", self.changes.len());
             for pos in (&mut poss).join() {
                 pos.update(&self.changes);
             }

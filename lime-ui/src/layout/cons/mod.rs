@@ -49,6 +49,16 @@ impl Constraints {
         self.updates
             .extend(self.cons.drain(..).map(ConstraintUpdate::Remove))
     }
+
+    pub(in layout) fn expand(&mut self) {
+        self.updates
+            .extend(self.cons.iter().cloned().map(ConstraintUpdate::Add))
+    }
+
+    pub(in layout) fn collapse(&mut self) {
+        self.updates
+            .extend(self.cons.iter().cloned().map(ConstraintUpdate::Remove))
+    }
 }
 
 pub(in layout) enum ConstraintUpdate {

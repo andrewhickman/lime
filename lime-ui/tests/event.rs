@@ -15,6 +15,7 @@ use cassowary::WeightedRelation::EQ;
 use render::d2::Point;
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
+use ui::event::MouseHover;
 use ui::{Constraints, EventSystem, MouseEvent, Node, Position, Root};
 use winit::{DeviceId, Event, ModifiersState, WindowEvent, WindowId};
 
@@ -107,6 +108,8 @@ fn assert_target(
     } else {
         assert!(!mouse_moved(world, reader));
     }
+
+    assert_eq!(world.read_resource::<MouseHover>().entity(), target);
 }
 
 #[test]
