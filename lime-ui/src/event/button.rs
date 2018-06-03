@@ -68,12 +68,16 @@ impl<'a> System<'a> for ButtonSystem {
     type SystemData = (
         ReadExpect<'a, EventChannel<Event>>,
         WriteExpect<'a, EventChannel<ButtonEvent>>,
+        WriteExpect<'a, EventChannel<ToggleButtonEvent>>,
         WriteStorage<'a, Button>,
         WriteStorage<'a, ToggleButton>,
         ReadStorage<'a, RadioButton>,
     );
 
-    fn run(&mut self, (events, mut btn_events, mut btns, mut tgls, rads): Self::SystemData) {
+    fn run(
+        &mut self,
+        (events, mut btn_events, mut tgl_events, mut btns, mut tgls, rads): Self::SystemData,
+    ) {
         for &event in events.read(&mut self.reader) {
             match event.kind {
                 EventKind::Mouse(MouseEvent::Move(_, _)) => continue,
@@ -87,9 +91,16 @@ impl<'a> System<'a> for ButtonSystem {
                 }
 
                 if let Some(rad) = rads.get(event.entity) {
-                    update_radio_button(event, &mut btn_events, btn, &mut tgls, rad);
+                    update_radio_button(
+                        event,
+                        &mut btn_events,
+                        &mut tgl_events,
+                        btn,
+                        &mut tgls,
+                        rad,
+                    );
                 } else if let Some(tgl) = tgls.get_mut(event.entity) {
-                    update_toggle_button(event, &mut btn_events, btn, tgl);
+                    update_toggle_button(event, &mut btn_events, &mut tgl_events, btn, tgl);
                 } else {
                     update_button(event, &mut btn_events, btn);
                 }
@@ -143,12 +154,17 @@ fn update_button<'a>(event: Event, btn_events: &mut EventChannel<ButtonEvent>, b
 fn update_toggle_button<'a>(
     event: Event,
     btn_events: &mut EventChannel<ButtonEvent>,
+    tgl_events: &mut EventChannel<ToggleButtonEvent>,
     btn: &mut Button,
     tgl: &mut ToggleButton,
 ) {
     if let Some(btn_event) = update_button_common(event, btn) {
         if btn_event.is_press() {
             tgl.state = !tgl.state;
+            tgl_events.single_write(ToggleButtonEvent {
+                entity: event.entity,
+                state: tgl.state,
+            });
         }
         btn_events.single_write(btn_event);
     }
@@ -157,6 +173,7 @@ fn update_toggle_button<'a>(
 fn update_radio_button<'a>(
     event: Event,
     btn_events: &mut EventChannel<ButtonEvent>,
+    tgl_events: &mut EventChannel<ToggleButtonEvent>,
     btn: &mut Button,
     tgls: &mut WriteStorage<'a, ToggleButton>,
     rad: &RadioButton,
@@ -165,7 +182,14 @@ fn update_radio_button<'a>(
         if btn_event.is_press() {
             for &ent in rad.group.iter() {
                 if let Some(tgl) = tgls.get_mut(ent) {
-                    tgl.state = ent == event.entity;
+                    let state = ent == event.entity;
+                    if tgl.state != state {
+                        tgl.state = state;
+                        tgl_events.single_write(ToggleButtonEvent {
+                            entity: event.entity,
+                            state,
+                        });
+                    }
                 } else {
                     error!("Invalid toggle button '{:?}' in radio button group.", ent);
                 }
