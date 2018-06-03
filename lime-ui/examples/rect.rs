@@ -10,26 +10,15 @@ mod common;
 
 use cassowary::strength::*;
 use render::Color;
-use specs::prelude::*;
-use ui::{Brush, DrawUi, Node, Position, Root};
-use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
-
-use common::D3;
+use ui::{Brush, Node, Position, Root};
+use winit::{Event, EventsLoop, WindowEvent};
 
 fn main() {
     env_logger::init();
     std::panic::set_hook(Box::new(utils::panic_hook));
 
     let mut events_loop = EventsLoop::new();
-    let builder = WindowBuilder::new();
-    let mut world = World::new();
-    let renderer = render::init(&mut world, &events_loop, builder, D3, DrawUi);
-    let layout_sys = ui::init(&mut world);
-
-    let mut dispatcher = DispatcherBuilder::new()
-        .with_thread_local(layout_sys)
-        .with_thread_local(renderer)
-        .build();
+    let (mut world, mut dispatcher) = common::init(&events_loop);
 
     let root = world.read_resource::<Root>().entity();
 
@@ -37,7 +26,7 @@ fn main() {
     let cons = {
         let poss = world.read_storage::<Position>();
         pos.constraints_builder()
-            .min_size((100.0, 100.0), STRONG)
+            .size((400.0, 200.0), STRONG)
             .center(poss.get(root).unwrap(), STRONG)
             .build()
     };

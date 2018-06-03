@@ -14,9 +14,10 @@ pub fn init(dims: ScreenDimensions) -> (World, Dispatcher<'static, 'static>) {
     let mut world = World::new();
     world.add_resource(dims);
     world.add_resource::<EventChannel<ScreenDimensions>>(Default::default());
-    let layout_sys = ui::init(&mut world);
+    let (layout_sys, button_sys) = ui::init(&mut world);
 
     let dispatcher = DispatcherBuilder::new()
+        .with(button_sys, "", &[])
         .with_thread_local(layout_sys)
         .build();
 

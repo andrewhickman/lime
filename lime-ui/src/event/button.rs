@@ -64,6 +64,15 @@ pub struct ButtonSystem {
     reader: ReaderId<Event>,
 }
 
+impl ButtonSystem {
+    pub(crate) fn new(world: &mut World) -> Self {
+        let reader = world
+            .write_resource::<EventChannel<Event>>()
+            .register_reader();
+        ButtonSystem { reader }
+    }
+}
+
 impl<'a> System<'a> for ButtonSystem {
     type SystemData = (
         ReadExpect<'a, EventChannel<Event>>,

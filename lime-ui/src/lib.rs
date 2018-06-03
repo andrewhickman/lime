@@ -22,13 +22,16 @@ pub use self::tree::{Node, Root};
 use shrev::EventChannel;
 use specs::World;
 
-pub fn init(world: &mut World) -> LayoutSystem {
+pub fn init(world: &mut World) -> (LayoutSystem, event::ButtonSystem) {
     world.register::<Constraints>();
     world.register::<Position>();
     world.register::<Node>();
     world.register::<Brush>();
     world.register::<draw::Visibility>();
     world.register::<layout::Grid>();
+    world.register::<event::Button>();
+    world.register::<event::ToggleButton>();
+    world.register::<event::RadioButton>();
 
     let root = Root::new(world);
     world.add_resource(event::KeyboardFocus::new(&root));
@@ -36,5 +39,10 @@ pub fn init(world: &mut World) -> LayoutSystem {
     world.add_resource(root);
     world.add_resource(EventChannel::<Event>::new());
     world.add_resource(EventChannel::<draw::VisibilityEvent>::new());
-    LayoutSystem::new(world)
+    world.add_resource(EventChannel::<event::ButtonEvent>::new());
+    world.add_resource(EventChannel::<event::ToggleButtonEvent>::new());
+    let layout_sys = LayoutSystem::new(world);
+    let button_sys = event::ButtonSystem::new(world);
+
+    (layout_sys, button_sys)
 }

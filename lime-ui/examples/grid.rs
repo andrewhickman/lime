@@ -15,15 +15,12 @@ use render::Color;
 use specs::prelude::*;
 use ui::layout::grid::Size;
 use ui::layout::Grid;
-use ui::{Brush, DrawUi, Node, Position, Root};
-use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
-
-use common::D3;
+use ui::{Brush, Node, Position, Root};
+use winit::{Event, EventsLoop, WindowEvent};
 
 fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Color) -> Entity {
     let pos = Position::new();
-    let mut cons = pos
-        .constraints_builder()
+    let mut cons = pos.constraints_builder()
         .min_size((100.0, 100.0), STRONG)
         .build();
     world
@@ -44,15 +41,7 @@ fn main() {
     std::panic::set_hook(Box::new(utils::panic_hook));
 
     let mut events_loop = EventsLoop::new();
-    let builder = WindowBuilder::new();
-    let mut world = World::new();
-    let renderer = render::init(&mut world, &events_loop, builder, D3, DrawUi);
-    let layout_sys = ui::init(&mut world);
-
-    let mut dispatcher = DispatcherBuilder::new()
-        .with_thread_local(layout_sys)
-        .with_thread_local(renderer)
-        .build();
+    let (mut world, mut dispatcher) = common::init(&events_loop);
 
     let root = world.read_resource::<Root>().entity();
     {
