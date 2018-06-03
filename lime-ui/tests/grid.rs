@@ -16,6 +16,7 @@ use render::d2::Point;
 use render::ScreenDimensions;
 use shrev::EventChannel;
 use specs::prelude::*;
+use ui::draw::{Visibility, VisibilityState};
 use ui::layout::grid::Size;
 use ui::layout::{ConstraintsBuilder, Grid};
 use ui::{Node, Position, Root};
@@ -388,5 +389,69 @@ fn size() {
         let g = comps.get(grid).unwrap();
         assert_ulps_eq!(g.br().0 - g.tl().0, 800.0);
         assert_ulps_eq!(g.br().1 - g.tl().1, 500.0);
+    }
+}
+
+#[test]
+fn visibility() {
+    let (mut world, mut dispatcher) = init([1000, 750].into());
+
+    let grid = create_grid(&mut world, vec![Size::Auto], vec![Size::Auto]);
+
+    let pos = Position::new();
+    let mut cons = pos.constraints_builder()
+        .size((1000.0, 750.0), STRONG)
+        .build();
+    world
+        .read_storage::<Grid>()
+        .get(grid)
+        .unwrap()
+        .insert(0, 0, &pos, &mut cons);
+
+    let node = Node::with_parent(world.create_entity(), grid)
+        .with(pos)
+        .with(cons)
+        .with(Visibility::new())
+        .build();
+
+    dispatcher.dispatch(&world.res);
+
+    {
+        let comps = world.read_storage::<Position>();
+        let g = comps.get(grid).unwrap();
+        assert_ulps_eq!(g.br().0 - g.tl().0, 1000.0);
+        assert_ulps_eq!(g.br().1 - g.tl().1, 750.0);
+    }
+
+    world
+        .write_storage::<Visibility>()
+        .get_mut(node)
+        .unwrap()
+        .set(
+            VisibilityState::Collapsed,
+            node,
+            &mut world.write_resource(),
+        );
+    dispatcher.dispatch(&world.res);
+
+    {
+        let comps = world.read_storage::<Position>();
+        let g = comps.get(grid).unwrap();
+        assert_ulps_eq!(g.br().0 - g.tl().0, 0.0);
+        assert_ulps_eq!(g.br().1 - g.tl().1, 0.0);
+    }
+
+    world
+        .write_storage::<Visibility>()
+        .get_mut(node)
+        .unwrap()
+        .set(VisibilityState::Visible, node, &mut world.write_resource());
+    dispatcher.dispatch(&world.res);
+
+    {
+        let comps = world.read_storage::<Position>();
+        let g = comps.get(grid).unwrap();
+        assert_ulps_eq!(g.br().0 - g.tl().0, 1000.0);
+        assert_ulps_eq!(g.br().1 - g.tl().1, 750.0);
     }
 }
