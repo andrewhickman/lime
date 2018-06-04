@@ -81,7 +81,7 @@ impl LayoutSystem {
 
         match self.solver.remove_constraint(&con) {
             Ok(()) => (),
-            Err(UnknownConstraint) => (), // Can happen when collapsed element is added.
+            Err(UnknownConstraint) => error!("Constraint removed twice: '{:#?}'.", con),
             Err(InternalSolverError(msg)) => panic!(msg),
         }
     }

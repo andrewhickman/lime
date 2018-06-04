@@ -1,32 +1,34 @@
 use cassowary::WeightedRelation::*;
 use cassowary::{strength, Constraint};
+use fnv::FnvHashSet;
 
 use {Constraints, Position};
 
 pub struct ConstraintsBuilder<'a> {
     pos: &'a Position,
-    cons: Vec<Constraint>,
+    cons: FnvHashSet<Constraint>,
 }
 
 impl<'a> ConstraintsBuilder<'a> {
     pub(super) fn new(pos: &'a Position) -> Self {
-        let cons = vec![
-            pos.width() | GE(strength::REQUIRED) | 0.0,
-            pos.width() | GE(strength::REQUIRED) | 0.0,
-        ];
+        let mut cons = FnvHashSet::with_capacity_and_hasher(2, Default::default());
+        cons.insert(pos.width() | GE(strength::REQUIRED) | 0.0);
+        cons.insert(pos.width() | GE(strength::REQUIRED) | 0.0);
         ConstraintsBuilder { pos, cons }
     }
 
     pub fn with(mut self, con: Constraint) -> Self {
-        self.cons.push(con);
+        self.cons.insert(con);
         self
     }
 
     pub fn center(mut self, other: &Position, strength: f64) -> Self {
-        self.cons
-            .push(self.pos.left() - other.left() | EQ(strength) | other.right() - self.pos.right());
-        self.cons
-            .push(self.pos.top() - other.top() | EQ(strength) | other.bottom() - self.pos.bottom());
+        self.cons.insert(
+            self.pos.left() - other.left() | EQ(strength) | other.right() - self.pos.right(),
+        );
+        self.cons.insert(
+            self.pos.top() - other.top() | EQ(strength) | other.bottom() - self.pos.bottom(),
+        );
         self
     }
 

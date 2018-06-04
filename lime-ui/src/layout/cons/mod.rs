@@ -2,14 +2,22 @@ mod store;
 
 pub use self::store::ConstraintStorage;
 
-use std::ops::Range;
+use std::iter::FromIterator;
+use std::mem;
 
 use cassowary::Constraint;
+use fnv::FnvHashSet;
 use specs::prelude::*;
 
 pub struct Constraints {
-    cons: Vec<Constraint>,
+    cons: FnvHashSet<Constraint>,
     updates: Vec<ConstraintUpdate>,
+    active: bool,
+}
+
+pub(in layout) enum ConstraintUpdate {
+    Add(Constraint),
+    Remove(Constraint),
 }
 
 impl Component for Constraints {
@@ -17,51 +25,52 @@ impl Component for Constraints {
 }
 
 impl Constraints {
-    pub fn new(cons: Vec<Constraint>) -> Self {
+    pub fn new(cons: FnvHashSet<Constraint>) -> Self {
         let updates = cons.iter().cloned().map(ConstraintUpdate::Add).collect();
-        Constraints { cons, updates }
+        Constraints {
+            cons,
+            updates,
+            active: true,
+        }
     }
 
-    pub fn add(&mut self, iter: impl IntoIterator<Item = Constraint>) -> Range<usize> {
-        let old_len = self.cons.len();
-        self.cons.extend(iter);
-        let range = old_len..self.cons.len();
-        self.updates.extend(
-            self.cons[range.clone()]
-                .iter()
-                .cloned()
-                .map(ConstraintUpdate::Add),
-        );
-        range
+    pub fn add(&mut self, con: Constraint) {
+        if self.cons.insert(con.clone()) && self.active {
+            self.updates.push(ConstraintUpdate::Add(con));
+        }
     }
 
-    pub fn remove<'a>(&'a mut self, range: Range<usize>) -> impl Iterator<Item = Constraint> + 'a {
-        self.updates.extend(
-            self.cons[range.clone()]
-                .iter()
-                .cloned()
-                .map(ConstraintUpdate::Remove),
-        );
-        self.cons.drain(range)
+    pub fn remove(&mut self, con: Constraint) {
+        if self.cons.remove(&con) && self.active {
+            self.updates.push(ConstraintUpdate::Remove(con));
+        }
     }
 
     pub fn clear(&mut self) {
         self.updates
-            .extend(self.cons.drain(..).map(ConstraintUpdate::Remove))
+            .extend(self.cons.drain().map(ConstraintUpdate::Remove))
     }
 
     pub(in layout) fn expand(&mut self) {
-        self.updates
-            .extend(self.cons.iter().cloned().map(ConstraintUpdate::Add))
+        if !mem::replace(&mut self.active, false) {
+            self.updates
+                .extend(self.cons.iter().cloned().map(ConstraintUpdate::Add))
+        }
     }
 
     pub(in layout) fn collapse(&mut self) {
-        self.updates
-            .extend(self.cons.iter().cloned().map(ConstraintUpdate::Remove))
+        if mem::replace(&mut self.active, false) {
+            self.updates
+                .extend(self.cons.iter().cloned().map(ConstraintUpdate::Remove))
+        }
     }
 }
 
-pub(in layout) enum ConstraintUpdate {
-    Add(Constraint),
-    Remove(Constraint),
+impl FromIterator<Constraint> for Constraints {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = Constraint>,
+    {
+        Constraints::new(FnvHashSet::from_iter(iter))
+    }
 }

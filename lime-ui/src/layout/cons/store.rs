@@ -51,8 +51,10 @@ impl UnprotectedStorage<Constraints> for ConstraintStorage {
 
     unsafe fn remove(&mut self, id: Index) -> Constraints {
         let mut cons = self.store.remove(id);
-        cons.clear();
-        self.updates.append(&mut cons.updates);
+        if cons.active {
+            cons.clear();
+            self.updates.append(&mut cons.updates);
+        }
         cons
     }
 }

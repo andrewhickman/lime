@@ -9,6 +9,7 @@ extern crate winit;
 mod common;
 
 use std::mem;
+use std::iter::FromIterator;
 
 use cassowary::strength::REQUIRED;
 use cassowary::WeightedRelation::EQ;
@@ -70,7 +71,7 @@ fn mouse_moved(world: &mut World, reader: &mut ReaderId<ui::Event>) -> bool {
 
 fn create_rect(world: &mut World, parent: Entity, l: i32, t: i32, w: i32, h: i32) -> Entity {
     let pos = Position::new();
-    let cons = Constraints::new(vec![
+    let cons = Constraints::from_iter(vec![
         pos.left() | EQ(REQUIRED) | l as f64,
         pos.top() | EQ(REQUIRED) | t as f64,
         pos.width() | EQ(REQUIRED) | w as f64,
