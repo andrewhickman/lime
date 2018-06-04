@@ -6,6 +6,7 @@ extern crate lime_ui as ui;
 extern crate lime_utils as utils;
 extern crate shrev;
 extern crate specs;
+extern crate specs_mirror;
 
 mod common;
 
@@ -16,6 +17,7 @@ use render::d2::Point;
 use render::ScreenDimensions;
 use shrev::EventChannel;
 use specs::prelude::*;
+use specs_mirror::StorageMutExt;
 use ui::draw::{Visibility, VisibilityState};
 use ui::layout::grid::Size;
 use ui::layout::{ConstraintsBuilder, Grid};
@@ -426,13 +428,7 @@ fn visibility() {
 
     world
         .write_storage::<Visibility>()
-        .get_mut(node)
-        .unwrap()
-        .set(
-            VisibilityState::Collapsed,
-            node,
-            &mut world.write_resource(),
-        );
+        .modify(node, VisibilityState::Collapsed);
     dispatcher.dispatch(&world.res);
 
     {
@@ -444,9 +440,7 @@ fn visibility() {
 
     world
         .write_storage::<Visibility>()
-        .get_mut(node)
-        .unwrap()
-        .set(VisibilityState::Visible, node, &mut world.write_resource());
+        .modify(node, VisibilityState::Visible);
     dispatcher.dispatch(&world.res);
 
     {

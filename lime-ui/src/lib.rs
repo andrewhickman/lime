@@ -39,7 +39,6 @@ pub fn init(world: &mut World) -> (LayoutSystem, event::ButtonSystem) {
     world.add_resource(event::MouseHover::new());
     world.add_resource(root);
     world.add_resource(EventChannel::<Event>::new());
-    world.add_resource(EventChannel::<draw::VisibilityEvent>::new());
     world.add_resource(EventChannel::<event::ButtonEvent>::new());
     world.add_resource(EventChannel::<event::ToggleButtonEvent>::new());
     let layout_sys = LayoutSystem::new(world);

@@ -5,9 +5,10 @@ use fnv::FnvHashMap;
 use render::ScreenDimensions;
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
+use specs_mirror::{StorageExt, StorageMutExt};
 use utils::throw;
 
-use draw::VisibilityEvent;
+use draw::{Visibility, VisibilityEvent};
 use layout::cons::{ConstraintStorage, ConstraintUpdate};
 use layout::{Constraints, Position};
 use tree::Root;
@@ -27,7 +28,7 @@ impl LayoutSystem {
         let root = world.read_resource::<Root>();
         let mut poss = world.write_storage::<Position>();
         let mut dims_tx = world.write_resource::<EventChannel<ScreenDimensions>>();
-        let mut vis_tx = world.write_resource::<EventChannel<VisibilityEvent>>();
+        let vis_rx = world.write_storage::<Visibility>().register_reader();
 
         let mut solver = Solver::new();
 
@@ -45,7 +46,7 @@ impl LayoutSystem {
             solver,
             changes: FnvHashMap::default(),
             dims_rx: dims_tx.register_reader(),
-            vis_rx: vis_tx.register_reader(),
+            vis_rx,
             width,
             height,
         };
@@ -90,12 +91,12 @@ impl LayoutSystem {
 impl<'a> System<'a> for LayoutSystem {
     type SystemData = (
         ReadExpect<'a, EventChannel<ScreenDimensions>>,
-        ReadExpect<'a, EventChannel<VisibilityEvent>>,
         WriteStorage<'a, Constraints>,
         WriteStorage<'a, Position>,
+        ReadStorage<'a, Visibility>,
     );
 
-    fn run(&mut self, (dims_tx, vis_tx, mut cons, mut poss): Self::SystemData) {
+    fn run(&mut self, (dims_tx, mut cons, mut poss, viss): Self::SystemData) {
         if let Some(dims) = dims_tx.read(&mut self.dims_rx).last() {
             trace!("Resizing ui to '({}, {})'.", dims.width(), dims.height());
             let LayoutSystem { width, height, .. } = self;
@@ -103,7 +104,7 @@ impl<'a> System<'a> for LayoutSystem {
             self.resize(*height, dims.height());
         }
 
-        for vis_ev in vis_tx.read(&mut self.vis_rx) {
+        for vis_ev in viss.read_events(&mut self.vis_rx) {
             if let Some(needs_layout) = vis_ev.needs_layout_changed() {
                 if let Some(con) = cons.get_mut(vis_ev.entity) {
                     if needs_layout {
