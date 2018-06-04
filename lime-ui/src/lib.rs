@@ -5,6 +5,7 @@ extern crate lime_render as render;
 extern crate lime_utils as utils;
 extern crate shrev;
 extern crate specs;
+extern crate specs_mirror;
 #[macro_use]
 extern crate log;
 extern crate winit;
