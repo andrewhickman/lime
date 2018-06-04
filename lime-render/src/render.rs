@@ -157,13 +157,12 @@ impl Renderer {
         self.swapchain.dimensions().into()
     }
 
-    fn new_dimensions(&self) -> ScreenDimensions {
-        self.surface
-            .capabilities(self.queue.device().physical_device())
-            .unwrap_or_else(throw)
+    fn new_dimensions(&self) -> Result<ScreenDimensions, failure::Error> {
+        Ok(self.surface
+            .capabilities(self.queue.device().physical_device())?
             .current_extent
             .unwrap()
-            .into()
+            .into())
     }
 
     pub(crate) fn render<D3: d3::Draw, D2: d2::Draw>(
@@ -209,7 +208,7 @@ impl Renderer {
         res: &Resources,
         dim: &mut ScreenDimensions,
     ) -> Result<(), failure::Error> {
-        let new_dim = self.new_dimensions();
+        let new_dim = self.new_dimensions()?;
         let (swapchain, images) = self.swapchain.recreate_with_dimension(new_dim.into())?;
         self.swapchain = swapchain;
         let depth_buffer =
