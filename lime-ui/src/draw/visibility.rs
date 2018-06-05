@@ -2,7 +2,6 @@ use std::mem;
 
 use shrev::EventChannel;
 use specs::prelude::*;
-use specs::world::Index;
 use specs_mirror::{Mirrored, MirroredStorage};
 
 #[derive(Copy, Clone, Debug)]
@@ -15,18 +14,7 @@ impl Component for Visibility {
 }
 
 impl Mirrored for Visibility {
-    type State = VisibilityState;
     type Event = VisibilityEvent;
-
-    fn insert(&mut self, _: &mut EventChannel<Self::Event>, _: Index) {}
-    fn remove(&mut self, _: &mut EventChannel<Self::Event>, _: Index) {}
-
-    fn modify(&mut self, chan: &mut EventChannel<Self::Event>, entity: Entity, new: Self::State) {
-        let old = mem::replace(&mut self.state, new);
-        if old != new {
-            chan.single_write(VisibilityEvent { entity, old, new })
-        }
-    }
 }
 
 impl Visibility {
@@ -42,6 +30,18 @@ impl Visibility {
 
     pub fn get(&self) -> VisibilityState {
         self.state
+    }
+
+    pub fn set(
+        &mut self,
+        entity: Entity,
+        new: VisibilityState,
+        chan: &mut EventChannel<VisibilityEvent>,
+    ) {
+        let old = mem::replace(&mut self.state, new);
+        if old != new {
+            chan.single_write(VisibilityEvent { entity, old, new })
+        }
     }
 }
 

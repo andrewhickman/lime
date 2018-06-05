@@ -394,6 +394,12 @@ fn size() {
     }
 }
 
+fn set_visibility(world: &mut World, entity: Entity, state: VisibilityState) {
+    let mut storage = world.write_storage::<Visibility>();
+    let (vis, chan) = storage.modify(entity).unwrap();
+    vis.set(entity, state, chan);
+}
+
 #[test]
 fn visibility() {
     let (mut world, mut dispatcher) = init([1000, 750].into());
@@ -401,8 +407,7 @@ fn visibility() {
     let grid = create_grid(&mut world, vec![Size::Auto], vec![Size::Auto]);
 
     let pos = Position::new();
-    let mut cons = pos
-        .constraints_builder()
+    let mut cons = pos.constraints_builder()
         .size((1000.0, 750.0), STRONG)
         .build();
     world
@@ -426,9 +431,7 @@ fn visibility() {
         assert_ulps_eq!(g.br().1 - g.tl().1, 750.0);
     }
 
-    world
-        .write_storage::<Visibility>()
-        .modify(node, VisibilityState::Collapsed);
+    set_visibility(&mut world, node, VisibilityState::Collapsed);
     dispatcher.dispatch(&world.res);
 
     {
@@ -438,9 +441,7 @@ fn visibility() {
         assert_ulps_eq!(g.br().1 - g.tl().1, 0.0);
     }
 
-    world
-        .write_storage::<Visibility>()
-        .modify(node, VisibilityState::Visible);
+    set_visibility(&mut world, node, VisibilityState::Visible);
     dispatcher.dispatch(&world.res);
 
     {
