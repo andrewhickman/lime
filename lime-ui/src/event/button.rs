@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use shrev::{EventChannel, ReaderId};
+use specs::error::Error;
 use specs::prelude::*;
 use specs_mirror::{Mirrored, MirroredStorage, StorageMutExt};
 use winit::MouseButton;
@@ -37,16 +38,51 @@ pub struct ButtonEvent {
     pub new: ButtonState,
 }
 
-impl ButtonEvent {
-    pub fn is_press(&self) -> bool {
-        self.new == ButtonState::Pressed
-    }
-}
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct ToggleButtonEvent {
     pub entity: Entity,
     pub state: bool,
+}
+
+impl Button {
+    pub fn new(enabled: bool) -> Self {
+        Button {
+            state: if enabled {
+                ButtonState::Normal
+            } else {
+                ButtonState::Disabled
+            },
+        }
+    }
+}
+
+impl ToggleButton {
+    pub fn new(state: bool) -> Self {
+        ToggleButton { state }
+    }
+}
+
+impl RadioButton {
+    pub fn create_group(
+        storage: &mut WriteStorage<RadioButton>,
+        entities: &Arc<[Entity]>,
+    ) -> Result<(), Error> {
+        for &ent in entities.iter() {
+            storage.insert(
+                ent,
+                RadioButton {
+                    group: entities.clone(),
+                },
+            )?;
+        }
+        Ok(())
+    }
+}
+
+impl ButtonEvent {
+    pub fn is_press(&self) -> bool {
+        self.new == ButtonState::Pressed
+    }
 }
 
 impl Component for Button {
