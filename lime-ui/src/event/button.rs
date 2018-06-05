@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
+use specs_mirror::{Mirrored, MirroredStorage, StorageMutExt};
 use winit::MouseButton;
 
 use {Event, EventKind, MouseEvent};
@@ -49,11 +50,19 @@ pub struct ToggleButtonEvent {
 }
 
 impl Component for Button {
-    type Storage = HashMapStorage<Self>;
+    type Storage = MirroredStorage<Self, HashMapStorage<Self>>;
+}
+
+impl Mirrored for Button {
+    type Event = ButtonEvent;
 }
 
 impl Component for ToggleButton {
-    type Storage = HashMapStorage<Self>;
+    type Storage = MirroredStorage<Self, HashMapStorage<Self>>;
+}
+
+impl Mirrored for ToggleButton {
+    type Event = ToggleButtonEvent;
 }
 
 impl Component for RadioButton {
@@ -76,17 +85,12 @@ impl ButtonSystem {
 impl<'a> System<'a> for ButtonSystem {
     type SystemData = (
         ReadExpect<'a, EventChannel<Event>>,
-        WriteExpect<'a, EventChannel<ButtonEvent>>,
-        WriteExpect<'a, EventChannel<ToggleButtonEvent>>,
         WriteStorage<'a, Button>,
         WriteStorage<'a, ToggleButton>,
         ReadStorage<'a, RadioButton>,
     );
 
-    fn run(
-        &mut self,
-        (events, mut btn_events, mut tgl_events, mut btns, mut tgls, rads): Self::SystemData,
-    ) {
+    fn run(&mut self, (events, mut btns, mut tgls, rads): Self::SystemData) {
         for &event in events.read(&mut self.reader) {
             match event.kind {
                 EventKind::Mouse(MouseEvent::Move(_, _)) => continue,
@@ -94,24 +98,17 @@ impl<'a> System<'a> for ButtonSystem {
                 _ => (),
             };
 
-            if let Some(btn) = btns.get_mut(event.entity) {
+            if let Some((btn, btn_chan)) = btns.modify(event.entity) {
                 if let ButtonState::Disabled = btn.state {
                     continue;
                 }
 
                 if let Some(rad) = rads.get(event.entity) {
-                    update_radio_button(
-                        event,
-                        &mut btn_events,
-                        &mut tgl_events,
-                        btn,
-                        &mut tgls,
-                        rad,
-                    );
-                } else if let Some(tgl) = tgls.get_mut(event.entity) {
-                    update_toggle_button(event, &mut btn_events, &mut tgl_events, btn, tgl);
+                    update_radio_button(event, btn_chan, btn, &mut tgls, rad);
+                } else if let Some((tgl, tgl_chan)) = tgls.modify(event.entity) {
+                    update_toggle_button(event, btn_chan, tgl_chan, btn, tgl);
                 } else {
-                    update_button(event, &mut btn_events, btn);
+                    update_button(event, btn_chan, btn);
                 }
             }
         }
@@ -182,7 +179,6 @@ fn update_toggle_button<'a>(
 fn update_radio_button<'a>(
     event: Event,
     btn_events: &mut EventChannel<ButtonEvent>,
-    tgl_events: &mut EventChannel<ToggleButtonEvent>,
     btn: &mut Button,
     tgls: &mut WriteStorage<'a, ToggleButton>,
     rad: &RadioButton,
@@ -190,11 +186,11 @@ fn update_radio_button<'a>(
     if let Some(btn_event) = update_button_common(event, btn) {
         if btn_event.is_press() {
             for &ent in rad.group.iter() {
-                if let Some(tgl) = tgls.get_mut(ent) {
+                if let Some((tgl, tgl_chan)) = tgls.modify(ent) {
                     let state = ent == event.entity;
                     if tgl.state != state {
                         tgl.state = state;
-                        tgl_events.single_write(ToggleButtonEvent {
+                        tgl_chan.single_write(ToggleButtonEvent {
                             entity: event.entity,
                             state,
                         });
