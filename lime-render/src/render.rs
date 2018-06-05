@@ -5,7 +5,7 @@ use failure;
 use shrev::EventChannel;
 use specs::shred::Resources;
 use utils::throw;
-use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
+use vulkano::command_buffer::{AutoCommandBuffer, AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::{Device, DeviceExtensions, Queue};
 use vulkano::format::{D16Unorm, Format};
 use vulkano::framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass};
@@ -26,7 +26,7 @@ pub struct Renderer {
     surface: Arc<Surface<Window>>,
     swapchain: Arc<Swapchain<Window>>,
     render_pass: Arc<RenderPassAbstract + Send + Sync>,
-    last_frame: Option<Box<GpuFuture + Send + Sync>>,
+    prev_frame: Option<Box<GpuFuture + Send + Sync>>,
     framebuffers: Vec<Arc<FramebufferAbstract + Send + Sync>>,
     swapchain_dirty: bool,
 }
@@ -146,7 +146,7 @@ impl Renderer {
             swapchain,
             framebuffers,
             render_pass,
-            last_frame: None,
+            prev_frame: None,
             d2,
             d3,
             swapchain_dirty: false,
@@ -172,10 +172,6 @@ impl Renderer {
         d2: &D2,
         dim: &mut ScreenDimensions,
     ) {
-        if let Some(ref mut last_frame) = self.last_frame {
-            last_frame.cleanup_finished();
-        }
-
         for _ in 0..5 {
             if self.swapchain_dirty {
                 match self.recreate_swapchain(res, dim) {
@@ -227,8 +223,11 @@ impl Renderer {
         d3: &D3,
         d2: &D2,
     ) -> Result<(), failure::Error> {
-        let (image_num, acquire) = swapchain::acquire_next_image(self.swapchain.clone(), None)?;
-        let fb = Arc::clone(&self.framebuffers[image_num]);
+        let (img_num, acquire) = swapchain::acquire_next_image(self.swapchain.clone(), None)?;
+        let fb = Arc::clone(&self.framebuffers[img_num]);
+        if let Some(ref mut last_frame) = self.prev_frame {
+            last_frame.cleanup_finished();
+        }
 
         let state = DynamicState {
             line_width: None,
@@ -256,30 +255,31 @@ impl Renderer {
             .end_render_pass()?
             .build()?;
 
-        let future = match self.last_frame.take() {
-            Some(last_frame) => last_frame
-                .join(acquire)
-                .then_execute(Arc::clone(&self.queue), command_buffer)?
-                .then_swapchain_present(
-                    Arc::clone(&self.queue),
-                    Arc::clone(&self.swapchain),
-                    image_num,
-                )
-                .then_signal_fence_and_flush()
-                .map(|f| Box::new(f) as Box<GpuFuture + Send + Sync>),
-            None => acquire
-                .then_execute(Arc::clone(&self.queue), command_buffer)?
-                .then_swapchain_present(
-                    Arc::clone(&self.queue),
-                    Arc::clone(&self.swapchain),
-                    image_num,
-                )
-                .then_signal_fence_and_flush()
-                .map(|f| Box::new(f) as Box<GpuFuture + Send + Sync>),
-        };
-
-        self.last_frame = Some(future?);
+        self.prev_frame = Some(match self.prev_frame.take() {
+            Some(last_frame) => self.execute(last_frame.join(acquire), command_buffer, img_num)?,
+            None => self.execute(acquire, command_buffer, img_num)?,
+        });
         Ok(())
+    }
+}
+
+impl Renderer {
+    fn execute(
+        &self,
+        acquire_future: impl GpuFuture,
+        command_buffer: AutoCommandBuffer,
+        image_num: usize,
+    ) -> Result<Box<impl GpuFuture>, failure::Error> {
+        let future = acquire_future
+            .then_execute(Arc::clone(&self.queue), command_buffer)?
+            .then_signal_fence()
+            .then_swapchain_present(
+                Arc::clone(&self.queue),
+                Arc::clone(&self.swapchain),
+                image_num,
+            );
+        future.flush()?;
+        Ok(Box::new(future))
     }
 }
 
