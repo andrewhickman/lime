@@ -54,11 +54,19 @@ impl Button {
             },
         }
     }
+
+    pub fn state(&self) -> ButtonState {
+        self.state
+    }
 }
 
 impl ToggleButton {
     pub fn new(state: bool) -> Self {
         ToggleButton { state }
+    }
+
+    pub fn state(&self) -> bool {
+        self.state
     }
 }
 
