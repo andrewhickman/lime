@@ -11,6 +11,7 @@ mod common;
 
 use std::iter::FromIterator;
 use std::mem;
+use std::sync::Arc;
 
 use cassowary::strength::REQUIRED;
 use cassowary::WeightedRelation::EQ;
@@ -18,7 +19,8 @@ use render::d2::Point;
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
 use specs_mirror::{StorageExt, StorageMutExt};
-use ui::event::{Button, ButtonEvent, ButtonState, MouseHover, ToggleButton, ToggleButtonEvent};
+use ui::event::{Button, ButtonEvent, ButtonState, MouseHover, RadioButton, ToggleButton,
+                ToggleButtonEvent};
 use ui::{Constraints, EventSystem, MouseEvent, Node, Position, Root};
 use winit::{DeviceId, Event, ModifiersState, MouseButton, WindowEvent, WindowId};
 
@@ -344,4 +346,109 @@ fn toggle_button() {
     check_button_state(&mut world, &mut dispatcher, btn, MouseEvent::Exit, Normal);
     assert!(!was_clicked(&mut world, btn, &mut btn_rdr));
     assert_eq!(was_toggled(&mut world, btn, &mut tgl_rdr), None);
+}
+
+#[test]
+fn radio_button() {
+    use ButtonState::*;
+
+    let (mut world, mut dispatcher) = init([1500, 1500].into());
+    let mut btn_rdr = world.write_storage::<Button>().register_reader();
+    let mut tgl_rdr1 = world.write_storage::<ToggleButton>().register_reader();
+    let mut tgl_rdr2 = world.write_storage::<ToggleButton>().register_reader();
+    let mut tgl_rdr3 = world.write_storage::<ToggleButton>().register_reader();
+    let root = world.read_resource::<Root>().entity();
+
+    let btn1 = create_rect(&mut world, root, 0, 0, 300, 100)
+        .with(Button::new(true))
+        .with(ToggleButton::new(false))
+        .build();
+    let btn2 = create_rect(&mut world, root, 0, 100, 300, 100)
+        .with(Button::new(true))
+        .with(ToggleButton::new(false))
+        .build();
+    let btn3 = create_rect(&mut world, root, 0, 200, 300, 100)
+        .with(Button::new(true))
+        .with(ToggleButton::new(false))
+        .build();
+
+    RadioButton::create_group(&mut world.write_storage(), Arc::new([btn1, btn2, btn3])).unwrap();
+
+    check_button_state(
+        &mut world,
+        &mut dispatcher,
+        btn1,
+        MouseEvent::Enter,
+        Focused,
+    );
+    check_button_state(
+        &mut world,
+        &mut dispatcher,
+        btn1,
+        MouseEvent::ButtonDown(MouseButton::Left, ModifiersState::default()),
+        Pressed,
+    );
+    assert!(was_clicked(&mut world, btn1, &mut btn_rdr));
+    assert_eq!(was_toggled(&mut world, btn1, &mut tgl_rdr1), Some(true));
+    assert_eq!(was_toggled(&mut world, btn2, &mut tgl_rdr2), None);
+    assert_eq!(was_toggled(&mut world, btn3, &mut tgl_rdr3), None);
+    check_button_state(&mut world, &mut dispatcher, btn1, MouseEvent::Exit, Normal);
+
+    check_button_state(
+        &mut world,
+        &mut dispatcher,
+        btn2,
+        MouseEvent::Enter,
+        Focused,
+    );
+    check_button_state(
+        &mut world,
+        &mut dispatcher,
+        btn2,
+        MouseEvent::ButtonDown(MouseButton::Left, ModifiersState::default()),
+        Pressed,
+    );
+    assert!(was_clicked(&mut world, btn2, &mut btn_rdr));
+    assert_eq!(was_toggled(&mut world, btn1, &mut tgl_rdr1), Some(false));
+    assert_eq!(was_toggled(&mut world, btn2, &mut tgl_rdr2), Some(true));
+    assert_eq!(was_toggled(&mut world, btn3, &mut tgl_rdr3), None);
+    check_button_state(&mut world, &mut dispatcher, btn2, MouseEvent::Exit, Normal);
+
+    check_button_state(
+        &mut world,
+        &mut dispatcher,
+        btn3,
+        MouseEvent::Enter,
+        Focused,
+    );
+    check_button_state(
+        &mut world,
+        &mut dispatcher,
+        btn3,
+        MouseEvent::ButtonDown(MouseButton::Left, ModifiersState::default()),
+        Pressed,
+    );
+    assert!(was_clicked(&mut world, btn3, &mut btn_rdr));
+    assert_eq!(was_toggled(&mut world, btn1, &mut tgl_rdr1), None);
+    assert_eq!(was_toggled(&mut world, btn2, &mut tgl_rdr2), Some(false));
+    assert_eq!(was_toggled(&mut world, btn3, &mut tgl_rdr3), Some(true));
+
+    check_button_state(
+        &mut world,
+        &mut dispatcher,
+        btn3,
+        MouseEvent::ButtonUp(MouseButton::Left, ModifiersState::default()),
+        Focused,
+    );
+    check_button_state(
+        &mut world,
+        &mut dispatcher,
+        btn3,
+        MouseEvent::ButtonDown(MouseButton::Left, ModifiersState::default()),
+        Pressed,
+    );
+    assert!(was_clicked(&mut world, btn3, &mut btn_rdr));
+    assert_eq!(was_toggled(&mut world, btn1, &mut tgl_rdr1), None);
+    assert_eq!(was_toggled(&mut world, btn2, &mut tgl_rdr2), None);
+    assert_eq!(was_toggled(&mut world, btn3, &mut tgl_rdr3), None);
 }
