@@ -8,11 +8,15 @@ extern crate winit;
 
 mod common;
 
+use std::sync::Arc;
+
 use cassowary::strength::*;
 use render::Color;
-use ui::draw::Brush;
+use ui::draw::{Brush, StyleDef, Style};
 use ui::tree::{Node, Root};
 use ui::layout::Position;
+use ui::event::{EventSystem, Button};
+use specs::prelude::*;
 use winit::{Event, EventsLoop, WindowEvent};
 
 fn main() {
@@ -33,10 +37,21 @@ fn main() {
             .build()
     };
 
+    let style_def = Arc::new(StyleDef {
+        btn_disabled: Brush::Color(Color::new(0.2, 0.2, 0.2, 1.0)),
+        btn_normal: Brush::Color(Color::RED),
+        btn_focused: Brush::Color(Color::GREEN),
+        btn_pressed: Brush::Color(Color::BLUE),
+    });
+
+    let style = Style::new(style_def.clone());
+
     Node::with_parent(world.create_entity(), root)
         .with(pos)
         .with(cons)
-        .with(Brush::Color(Color::RED))
+        .with(Button::new(true))
+        .with(style)
+        .with(style_def.btn_normal.clone())
         .build();
 
     let mut quit = false;
@@ -47,7 +62,7 @@ fn main() {
                     event: WindowEvent::Closed,
                     ..
                 } => quit = true,
-                _ => (),
+                ev => EventSystem(&ev).run_now(&world.res),
             };
         });
 

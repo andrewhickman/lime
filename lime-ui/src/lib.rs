@@ -18,12 +18,13 @@ pub mod tree;
 use shrev::EventChannel;
 use specs::World;
 
-pub fn init(world: &mut World) -> (layout::LayoutSystem, event::ButtonSystem) {
+pub fn init(world: &mut World) -> (layout::LayoutSystem, event::ButtonSystem, draw::StyleSystem) {
     world.register::<layout::Constraints>();
     world.register::<layout::Grid>();
     world.register::<layout::Position>();
     world.register::<tree::Node>();
     world.register::<draw::Brush>();
+    world.register::<draw::Style>();
     world.register::<draw::Visibility>();
     world.register::<event::Button>();
     world.register::<event::ToggleButton>();
@@ -36,6 +37,7 @@ pub fn init(world: &mut World) -> (layout::LayoutSystem, event::ButtonSystem) {
     world.add_resource(EventChannel::<event::Event>::new());
     let layout_sys = layout::LayoutSystem::new(world);
     let button_sys = event::ButtonSystem::new(world);
+    let style_sys = draw::StyleSystem::new(world);
 
-    (layout_sys, button_sys)
+    (layout_sys, button_sys, style_sys)
 }

@@ -20,8 +20,8 @@ use specs::prelude::*;
 use specs_mirror::StorageMutExt;
 use ui::draw::{Visibility, VisibilityState};
 use ui::layout::grid::Size;
-use ui::layout::{ConstraintsBuilder, Grid};
-use ui::{Node, Position, Root};
+use ui::layout::{ConstraintsBuilder, Grid, Position};
+use ui::tree::{Node, Root};
 
 use common::init;
 

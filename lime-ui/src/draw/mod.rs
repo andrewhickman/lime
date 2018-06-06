@@ -1,5 +1,7 @@
+mod style;
 mod visibility;
 
+pub use self::style::{Style, StyleDef, StyleSystem};
 pub use self::visibility::{Visibility, VisibilityEvent, VisibilityState};
 
 use render::d2::{Draw, Point};
@@ -9,6 +11,7 @@ use specs::prelude::*;
 use layout::Position;
 use tree::{self, Node, Root};
 
+#[derive(Clone)]
 pub enum Brush {
     Color(Color),
 }

@@ -23,6 +23,8 @@ pub struct LayoutSystem {
 }
 
 impl LayoutSystem {
+    pub const NAME: &'static str = "ui::layout";
+
     pub(crate) fn new(world: &mut World) -> Self {
         let dims = world.read_resource::<ScreenDimensions>();
         let root = world.read_resource::<Root>();

@@ -10,46 +10,9 @@ use tree::{Node, Root};
 
 pub struct EventSystem<'a>(pub &'a winit::Event);
 
-impl<'a> System<'a> for EventSystem<'a> {
-    type SystemData = (
-        ReadExpect<'a, Root>,
-        Entities<'a>,
-        ReadExpect<'a, KeyboardFocus>,
-        WriteExpect<'a, MouseHover>,
-        WriteExpect<'a, EventChannel<Event>>,
-        ReadStorage<'a, Node>,
-        ReadStorage<'a, Position>,
-    );
-
-    fn run(&mut self, data: Self::SystemData) {
-        match *self.0 {
-            winit::Event::WindowEvent { ref event, .. } => match *event {
-                WindowEvent::KeyboardInput { input, .. } => Self::keyboard_input(input, data),
-                WindowEvent::ReceivedCharacter(chr) => Self::received_character(chr, data),
-                WindowEvent::CursorMoved {
-                    position,
-                    modifiers,
-                    ..
-                } => Self::cursor_moved(position, modifiers, data),
-                WindowEvent::CursorLeft { .. } => Self::cursor_left(data),
-                WindowEvent::MouseInput {
-                    state,
-                    button,
-                    modifiers,
-                    ..
-                } => Self::mouse_input(state, button, modifiers, data),
-                _ => (),
-            },
-            winit::Event::DeviceEvent { ref event, .. } => match *event {
-                DeviceEvent::MouseMotion { delta, .. } => Self::mouse_motion(delta, data),
-                _ => (),
-            },
-            _ => (),
-        }
-    }
-}
-
 impl<'a> EventSystem<'a> {
+    pub const NAME: &'static str = "ui::event";
+
     fn keyboard_focus(
         root: ReadExpect<'a, Root>,
         ents: Entities<'a>,
@@ -132,6 +95,45 @@ impl<'a> EventSystem<'a> {
     ) {
         if let Some(ent) = hover.entity {
             events.single_write(Event::mouse(MouseEvent::MoveRaw(x, y), ent));
+        }
+    }
+}
+
+impl<'a> System<'a> for EventSystem<'a> {
+    type SystemData = (
+        ReadExpect<'a, Root>,
+        Entities<'a>,
+        ReadExpect<'a, KeyboardFocus>,
+        WriteExpect<'a, MouseHover>,
+        WriteExpect<'a, EventChannel<Event>>,
+        ReadStorage<'a, Node>,
+        ReadStorage<'a, Position>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        match *self.0 {
+            winit::Event::WindowEvent { ref event, .. } => match *event {
+                WindowEvent::KeyboardInput { input, .. } => Self::keyboard_input(input, data),
+                WindowEvent::ReceivedCharacter(chr) => Self::received_character(chr, data),
+                WindowEvent::CursorMoved {
+                    position,
+                    modifiers,
+                    ..
+                } => Self::cursor_moved(position, modifiers, data),
+                WindowEvent::CursorLeft { .. } => Self::cursor_left(data),
+                WindowEvent::MouseInput {
+                    state,
+                    button,
+                    modifiers,
+                    ..
+                } => Self::mouse_input(state, button, modifiers, data),
+                _ => (),
+            },
+            winit::Event::DeviceEvent { ref event, .. } => match *event {
+                DeviceEvent::MouseMotion { delta, .. } => Self::mouse_motion(delta, data),
+                _ => (),
+            },
+            _ => (),
         }
     }
 }

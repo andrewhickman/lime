@@ -118,6 +118,8 @@ pub struct ButtonSystem {
 }
 
 impl ButtonSystem {
+    pub const NAME: &'static str = "ui::button";
+
     pub(crate) fn new(world: &mut World) -> Self {
         let reader = world
             .write_resource::<EventChannel<Event>>()

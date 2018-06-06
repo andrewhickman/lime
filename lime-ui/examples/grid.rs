@@ -14,8 +14,9 @@ use cassowary::strength::*;
 use render::Color;
 use specs::prelude::*;
 use ui::layout::grid::Size;
-use ui::layout::Grid;
-use ui::{Brush, Node, Position, Root};
+use ui::layout::{Grid, Position};
+use ui::draw::Brush;
+use ui::tree::{Node, Root};
 use winit::{Event, EventsLoop, WindowEvent};
 
 fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Color) -> Entity {

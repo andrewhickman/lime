@@ -20,8 +20,9 @@ use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
 use specs_mirror::{StorageExt, StorageMutExt};
 use ui::event::{Button, ButtonEvent, ButtonState, MouseHover, RadioButton, ToggleButton,
-                ToggleButtonEvent};
-use ui::{Constraints, EventSystem, MouseEvent, Node, Position, Root};
+                ToggleButtonEvent, Event as UiEvent, EventKind as UiEventKind, EventSystem, MouseEvent};
+use ui::layout::{Constraints, Position};
+use ui::tree::{Node, Root};
 use winit::{DeviceId, Event, ModifiersState, MouseButton, WindowEvent, WindowId};
 
 use common::init;
@@ -41,24 +42,24 @@ fn push_event(world: &mut World, event: WindowEvent) {
     }).run_now(&mut world.res)
 }
 
-fn find_mouse_event(events: &[ui::Event], entity: Entity, event: MouseEvent) -> bool {
+fn find_mouse_event(events: &[UiEvent], entity: Entity, event: MouseEvent) -> bool {
     events
         .iter()
         .find(|&ev| {
-            *ev == ui::Event {
-                kind: ui::EventKind::Mouse(event),
+            *ev == UiEvent {
+                kind: UiEventKind::Mouse(event),
                 entity,
             }
         })
         .is_some()
 }
 
-fn mouse_moved(world: &mut World, reader: &mut ReaderId<ui::Event>) -> bool {
+fn mouse_moved(world: &mut World, reader: &mut ReaderId<UiEvent>) -> bool {
     world
-        .read_resource::<EventChannel<ui::Event>>()
+        .read_resource::<EventChannel<UiEvent>>()
         .read(reader)
         .find(|&ev| match ev.kind {
-            ui::EventKind::Mouse(e @ MouseEvent::Move(_, _)) => {
+            UiEventKind::Mouse(e @ MouseEvent::Move(_, _)) => {
                 println!("ev: {:?}, ent: {:?}", e, ev.entity);
                 true
             }
@@ -83,7 +84,7 @@ fn create_rect(world: &mut World, parent: Entity, l: i32, t: i32, w: i32, h: i32
 
 fn assert_target(
     world: &mut World,
-    reader: &mut ReaderId<ui::Event>,
+    reader: &mut ReaderId<UiEvent>,
     old: Option<Entity>,
     new: Option<Entity>,
     (x, y): (f64, f64),
@@ -99,7 +100,7 @@ fn assert_target(
 
     let events: Vec<_> = {
         world
-            .read_resource::<EventChannel<ui::Event>>()
+            .read_resource::<EventChannel<UiEvent>>()
             .read(reader)
             .cloned()
             .collect()
@@ -131,7 +132,7 @@ fn assert_target(
 fn hover() {
     let (mut world, mut dispatcher) = init([1500, 1500].into());
     let mut rdr = world
-        .write_resource::<EventChannel<ui::Event>>()
+        .write_resource::<EventChannel<UiEvent>>()
         .register_reader();
     let root = world.read_resource::<Root>().entity();
 
@@ -164,10 +165,10 @@ fn check_button_state(
     state: ButtonState,
 ) {
     world
-        .write_resource::<EventChannel<ui::Event>>()
-        .single_write(ui::Event {
+        .write_resource::<EventChannel<UiEvent>>()
+        .single_write(UiEvent {
             entity: button,
-            kind: ui::EventKind::Mouse(event),
+            kind: UiEventKind::Mouse(event),
         });
     dispatcher.dispatch(&world.res);
     assert_eq!(
