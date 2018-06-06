@@ -73,7 +73,7 @@ impl ToggleButton {
 impl RadioButton {
     pub fn create_group(
         storage: &mut WriteStorage<RadioButton>,
-        entities: &Arc<[Entity]>,
+        entities: Arc<[Entity]>,
     ) -> Result<(), Error> {
         for &ent in entities.iter() {
             storage.insert(
@@ -177,7 +177,7 @@ fn update_button_common<'a>(event: Event, btn: &mut Button) -> Option<ButtonEven
             ButtonState::Focused
         }
         EventKind::Mouse(ButtonDown(MouseButton::Left, _)) => {
-            debug_assert_ne!(old, ButtonState::Normal);
+            debug_assert_eq!(old, ButtonState::Focused);
             ButtonState::Pressed
         }
         _ => return None,
@@ -234,10 +234,7 @@ fn update_radio_button<'a>(
                     let state = ent == event.entity;
                     if tgl.state != state {
                         tgl.state = state;
-                        tgl_chan.single_write(ToggleButtonEvent {
-                            entity: event.entity,
-                            state,
-                        });
+                        tgl_chan.single_write(ToggleButtonEvent { entity: ent, state });
                     }
                 } else {
                     error!("Invalid toggle button '{:?}' in radio button group.", ent);
