@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use winit::{ElementState, KeyboardInput, ModifiersState, VirtualKeyCode};
 
-use Root;
+use tree::Root;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum KeyboardEvent {

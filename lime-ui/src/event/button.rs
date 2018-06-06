@@ -6,7 +6,7 @@ use specs::prelude::*;
 use specs_mirror::{Mirrored, MirroredStorage, StorageMutExt};
 use winit::MouseButton;
 
-use {Event, EventKind, MouseEvent};
+use event::{Event, EventKind, MouseEvent};
 
 #[derive(Clone, Debug)]
 pub struct Button {
@@ -160,7 +160,7 @@ impl<'a> System<'a> for ButtonSystem {
 }
 
 fn update_button_common<'a>(event: Event, btn: &mut Button) -> Option<ButtonEvent> {
-    use MouseEvent::*;
+    use self::MouseEvent::*;
 
     let old = btn.state;
     let new = match event.kind {

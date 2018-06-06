@@ -4,8 +4,9 @@ use specs::prelude::*;
 
 use winit::{self, DeviceEvent, ElementState, ModifiersState, MouseButton, WindowEvent};
 
-use event::{mouse, KeyboardEvent, KeyboardFocus, MouseEvent, MouseHover};
-use {Event, Node, Position, Root};
+use event::{mouse, Event, KeyboardEvent, KeyboardFocus, MouseEvent, MouseHover};
+use layout::Position;
+use tree::{Node, Root};
 
 pub struct EventSystem<'a>(pub &'a winit::Event);
 

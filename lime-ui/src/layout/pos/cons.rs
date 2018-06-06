@@ -2,7 +2,7 @@ use cassowary::WeightedRelation::*;
 use cassowary::{strength, Constraint};
 use fnv::FnvHashSet;
 
-use {Constraints, Position};
+use layout::{Constraints, Position};
 
 pub struct ConstraintsBuilder<'a> {
     pos: &'a Position,

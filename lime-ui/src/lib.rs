@@ -15,31 +15,26 @@ pub mod event;
 pub mod layout;
 pub mod tree;
 
-pub use self::draw::{Brush, DrawUi};
-pub use self::event::{Event, EventKind, EventSystem, KeyboardEvent, MouseEvent};
-pub use self::layout::{Constraints, LayoutSystem, Position};
-pub use self::tree::{Node, Root};
-
 use shrev::EventChannel;
 use specs::World;
 
-pub fn init(world: &mut World) -> (LayoutSystem, event::ButtonSystem) {
-    world.register::<Constraints>();
-    world.register::<Position>();
-    world.register::<Node>();
-    world.register::<Brush>();
-    world.register::<draw::Visibility>();
+pub fn init(world: &mut World) -> (layout::LayoutSystem, event::ButtonSystem) {
+    world.register::<layout::Constraints>();
     world.register::<layout::Grid>();
+    world.register::<layout::Position>();
+    world.register::<tree::Node>();
+    world.register::<draw::Brush>();
+    world.register::<draw::Visibility>();
     world.register::<event::Button>();
     world.register::<event::ToggleButton>();
     world.register::<event::RadioButton>();
 
-    let root = Root::new(world);
+    let root = tree::Root::new(world);
     world.add_resource(event::KeyboardFocus::new(&root));
     world.add_resource(event::MouseHover::new());
     world.add_resource(root);
-    world.add_resource(EventChannel::<Event>::new());
-    let layout_sys = LayoutSystem::new(world);
+    world.add_resource(EventChannel::<event::Event>::new());
+    let layout_sys = layout::LayoutSystem::new(world);
     let button_sys = event::ButtonSystem::new(world);
 
     (layout_sys, button_sys)

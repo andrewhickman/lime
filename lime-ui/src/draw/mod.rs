@@ -6,7 +6,8 @@ use render::d2::{Draw, Point};
 use render::Color;
 use specs::prelude::*;
 
-use {tree, Node, Position, Root};
+use layout::Position;
+use tree::{self, Node, Root};
 
 pub enum Brush {
     Color(Color),

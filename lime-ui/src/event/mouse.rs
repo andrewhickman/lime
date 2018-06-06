@@ -2,7 +2,8 @@ use render::d2::Point;
 use specs::prelude::*;
 use winit::{ElementState, ModifiersState, MouseButton};
 
-use {tree, Node, Position};
+use layout::Position;
+use tree::{self, Node};
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum MouseEvent {
