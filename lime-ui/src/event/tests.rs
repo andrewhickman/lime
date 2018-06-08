@@ -34,10 +34,10 @@ fn create_rect(
 ) -> EntityBuilder {
     let pos = Position::new();
     let cons = Constraints::from_iter(vec![
-        pos.left() | EQ(REQUIRED) | left,
-        pos.top() | EQ(REQUIRED) | top,
-        pos.width() | EQ(REQUIRED) | width,
-        pos.height() | EQ(REQUIRED) | height,
+        pos.left_var() | EQ(REQUIRED) | left,
+        pos.top_var() | EQ(REQUIRED) | top,
+        pos.width_var() | EQ(REQUIRED) | width,
+        pos.height_var() | EQ(REQUIRED) | height,
     ]);
 
     Node::with_parent(world.create_entity(), parent)

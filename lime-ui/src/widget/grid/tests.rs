@@ -101,14 +101,14 @@ fn basic() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(100.0, 100.0));
+        assert_approx_eq(p1.top_left(), Point(0.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(100.0, 100.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(100.0, 100.0));
-        assert_approx_eq(p2.br(), Point(200.0, 200.0));
+        assert_approx_eq(p2.top_left(), Point(100.0, 100.0));
+        assert_approx_eq(p2.bottom_right(), Point(200.0, 200.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(0.0, 200.0));
-        assert_approx_eq(p3.br(), Point(100.0, 300.0));
+        assert_approx_eq(p3.top_left(), Point(0.0, 200.0));
+        assert_approx_eq(p3.bottom_right(), Point(100.0, 300.0));
     }
 
     world
@@ -119,14 +119,14 @@ fn basic() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(100.0, 100.0));
+        assert_approx_eq(p1.top_left(), Point(0.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(100.0, 100.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(100.0, 100.0));
-        assert_approx_eq(p2.br(), Point(200.0, 200.0));
+        assert_approx_eq(p2.top_left(), Point(100.0, 100.0));
+        assert_approx_eq(p2.bottom_right(), Point(200.0, 200.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(0.0, 200.0));
-        assert_approx_eq(p3.br(), Point(100.0, 300.0));
+        assert_approx_eq(p3.top_left(), Point(0.0, 200.0));
+        assert_approx_eq(p3.bottom_right(), Point(100.0, 300.0));
     }
 }
 
@@ -155,14 +155,14 @@ fn auto() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(400.0, 300.0));
+        assert_approx_eq(p1.top_left(), Point(0.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(400.0, 300.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(400.0, 300.0));
-        assert_approx_eq(p2.br(), Point(1000.0, 600.0));
+        assert_approx_eq(p2.top_left(), Point(400.0, 300.0));
+        assert_approx_eq(p2.bottom_right(), Point(1000.0, 600.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(0.0, 600.0));
-        assert_approx_eq(p3.br(), Point(400.0, 750.0));
+        assert_approx_eq(p3.top_left(), Point(0.0, 600.0));
+        assert_approx_eq(p3.bottom_right(), Point(400.0, 750.0));
     }
 
     world
@@ -173,14 +173,14 @@ fn auto() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(400.0, 300.0));
+        assert_approx_eq(p1.top_left(), Point(0.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(400.0, 300.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(400.0, 300.0));
-        assert_approx_eq(p2.br(), Point(1000.0, 600.0));
+        assert_approx_eq(p2.top_left(), Point(400.0, 300.0));
+        assert_approx_eq(p2.bottom_right(), Point(1000.0, 600.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(0.0, 600.0));
-        assert_approx_eq(p3.br(), Point(400.0, 1100.0));
+        assert_approx_eq(p3.top_left(), Point(0.0, 600.0));
+        assert_approx_eq(p3.bottom_right(), Point(400.0, 1100.0));
     }
 }
 
@@ -206,11 +206,11 @@ fn abs() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(500.0, 500.0));
+        assert_approx_eq(p1.top_left(), Point(0.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(500.0, 500.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(500.0, 500.0));
-        assert_approx_eq(p2.br(), Point(1000.0, 750.0));
+        assert_approx_eq(p2.top_left(), Point(500.0, 500.0));
+        assert_approx_eq(p2.bottom_right(), Point(1000.0, 750.0));
     }
 
     world
@@ -221,11 +221,11 @@ fn abs() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(500.0, 500.0));
+        assert_approx_eq(p1.top_left(), Point(0.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(500.0, 500.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(500.0, 500.0));
-        assert_approx_eq(p2.br(), Point(1000.0, 1000.0));
+        assert_approx_eq(p2.top_left(), Point(500.0, 500.0));
+        assert_approx_eq(p2.bottom_right(), Point(1000.0, 1000.0));
     }
 }
 
@@ -254,14 +254,14 @@ fn rel() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(250.0, 250.0));
+        assert_approx_eq(p1.top_left(), Point(0.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(250.0, 250.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(250.0, 250.0));
-        assert_approx_eq(p2.br(), Point(500.0, 750.0));
+        assert_approx_eq(p2.top_left(), Point(250.0, 250.0));
+        assert_approx_eq(p2.bottom_right(), Point(500.0, 750.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(500.0, 0.0));
-        assert_approx_eq(p3.br(), Point(1000.0, 250.0));
+        assert_approx_eq(p3.top_left(), Point(500.0, 0.0));
+        assert_approx_eq(p3.bottom_right(), Point(1000.0, 250.0));
     }
 
     world
@@ -272,14 +272,14 @@ fn rel() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(0.0, 0.0));
-        assert_approx_eq(p1.br(), Point(300.0, 400.0));
+        assert_approx_eq(p1.top_left(), Point(0.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(300.0, 400.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(300.0, 400.0));
-        assert_approx_eq(p2.br(), Point(600.0, 1200.0));
+        assert_approx_eq(p2.top_left(), Point(300.0, 400.0));
+        assert_approx_eq(p2.bottom_right(), Point(600.0, 1200.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(600.0, 0.0));
-        assert_approx_eq(p3.br(), Point(1200.0, 400.0));
+        assert_approx_eq(p3.top_left(), Point(600.0, 0.0));
+        assert_approx_eq(p3.bottom_right(), Point(1200.0, 400.0));
     }
 }
 
@@ -314,20 +314,20 @@ fn mix() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(100.0, 0.0));
-        assert_approx_eq(p1.br(), Point(250.0, 300.0));
+        assert_approx_eq(p1.top_left(), Point(100.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(250.0, 300.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(100.0, 300.0));
-        assert_approx_eq(p2.br(), Point(250.0, 500.0));
+        assert_approx_eq(p2.top_left(), Point(100.0, 300.0));
+        assert_approx_eq(p2.bottom_right(), Point(250.0, 500.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(100.0, 500.0));
-        assert_approx_eq(p3.br(), Point(250.0, 700.0));
+        assert_approx_eq(p3.top_left(), Point(100.0, 500.0));
+        assert_approx_eq(p3.bottom_right(), Point(250.0, 700.0));
         let p4 = comps.get(r4).unwrap();
-        assert_approx_eq(p4.tl(), Point(250.0, 0.0));
-        assert_approx_eq(p4.br(), Point(450.0, 300.0));
+        assert_approx_eq(p4.top_left(), Point(250.0, 0.0));
+        assert_approx_eq(p4.bottom_right(), Point(450.0, 300.0));
         let p5 = comps.get(r5).unwrap();
-        assert_approx_eq(p5.tl(), Point(450.0, 0.0));
-        assert_approx_eq(p5.br(), Point(850.0, 300.0));
+        assert_approx_eq(p5.top_left(), Point(450.0, 0.0));
+        assert_approx_eq(p5.bottom_right(), Point(850.0, 300.0));
     }
 
     world
@@ -338,20 +338,20 @@ fn mix() {
     {
         let comps = world.read_storage::<Position>();
         let p1 = comps.get(r1).unwrap();
-        assert_approx_eq(p1.tl(), Point(100.0, 0.0));
-        assert_approx_eq(p1.br(), Point(250.0, 300.0));
+        assert_approx_eq(p1.top_left(), Point(100.0, 0.0));
+        assert_approx_eq(p1.bottom_right(), Point(250.0, 300.0));
         let p2 = comps.get(r2).unwrap();
-        assert_approx_eq(p2.tl(), Point(100.0, 300.0));
-        assert_approx_eq(p2.br(), Point(250.0, 500.0));
+        assert_approx_eq(p2.top_left(), Point(100.0, 300.0));
+        assert_approx_eq(p2.bottom_right(), Point(250.0, 500.0));
         let p3 = comps.get(r3).unwrap();
-        assert_approx_eq(p3.tl(), Point(100.0, 500.0));
-        assert_approx_eq(p3.br(), Point(250.0, 700.0));
+        assert_approx_eq(p3.top_left(), Point(100.0, 500.0));
+        assert_approx_eq(p3.bottom_right(), Point(250.0, 700.0));
         let p4 = comps.get(r4).unwrap();
-        assert_approx_eq(p4.tl(), Point(250.0, 0.0));
-        assert_approx_eq(p4.br(), Point(550.0, 300.0));
+        assert_approx_eq(p4.top_left(), Point(250.0, 0.0));
+        assert_approx_eq(p4.bottom_right(), Point(550.0, 300.0));
         let p5 = comps.get(r5).unwrap();
-        assert_approx_eq(p5.tl(), Point(550.0, 0.0));
-        assert_approx_eq(p5.br(), Point(1150.0, 300.0));
+        assert_approx_eq(p5.top_left(), Point(550.0, 0.0));
+        assert_approx_eq(p5.bottom_right(), Point(1150.0, 300.0));
     }
 }
 
@@ -377,8 +377,8 @@ fn size() {
     {
         let comps = world.read_storage::<Position>();
         let g = comps.get(grid).unwrap();
-        assert_ulps_eq!(g.br().0 - g.tl().0, 800.0);
-        assert_ulps_eq!(g.br().1 - g.tl().1, 500.0);
+        assert_ulps_eq!(g.width(), 800.0);
+        assert_ulps_eq!(g.height(), 500.0);
     }
 }
 
@@ -415,8 +415,8 @@ fn visibility() {
     {
         let comps = world.read_storage::<Position>();
         let g = comps.get(grid).unwrap();
-        assert_ulps_eq!(g.br().0 - g.tl().0, 1000.0);
-        assert_ulps_eq!(g.br().1 - g.tl().1, 750.0);
+        assert_ulps_eq!(g.width(), 1000.0);
+        assert_ulps_eq!(g.height(), 750.0);
     }
 
     set_visibility(&mut world, node, VisibilityState::Collapsed);
@@ -425,8 +425,8 @@ fn visibility() {
     {
         let comps = world.read_storage::<Position>();
         let g = comps.get(grid).unwrap();
-        assert_ulps_eq!(g.br().0 - g.tl().0, 0.0);
-        assert_ulps_eq!(g.br().1 - g.tl().1, 0.0);
+        assert_ulps_eq!(g.width(), 0.0);
+        assert_ulps_eq!(g.height(), 0.0);
     }
 
     set_visibility(&mut world, node, VisibilityState::Visible);
@@ -435,7 +435,7 @@ fn visibility() {
     {
         let comps = world.read_storage::<Position>();
         let g = comps.get(grid).unwrap();
-        assert_ulps_eq!(g.br().0 - g.tl().0, 1000.0);
-        assert_ulps_eq!(g.br().1 - g.tl().1, 750.0);
+        assert_ulps_eq!(g.width(), 1000.0);
+        assert_ulps_eq!(g.height(), 750.0);
     }
 }

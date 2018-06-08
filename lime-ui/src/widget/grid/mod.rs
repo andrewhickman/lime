@@ -38,17 +38,17 @@ impl Grid {
         let cols = cols.into_iter();
         let cap = 2 * rows.size_hint().0 + 2 * cols.size_hint().0 + 4;
         let mut cons = FnvHashSet::with_capacity_and_hasher(cap, Default::default());
-        let rows = layout(pos.top(), rows, pos.bottom(), &mut cons);
-        let cols = layout(pos.left(), cols, pos.right(), &mut cons);
+        let rows = layout(pos.top_var(), rows, pos.bottom_var(), &mut cons);
+        let cols = layout(pos.left_var(), cols, pos.right_var(), &mut cons);
         let cons = Constraints::new(cons);
         (Grid { rows, cols }, cons)
     }
 
     pub fn insert(&self, col: u32, row: u32, pos: &Position, cons: &mut Constraints) {
-        cons.add(pos.left() | EQ(REQUIRED) | self.cols[col as usize]);
-        cons.add(pos.top() | EQ(REQUIRED) | self.rows[row as usize]);
-        cons.add(pos.right() | EQ(REQUIRED) | self.cols[(col + 1) as usize]);
-        cons.add(pos.bottom() | EQ(REQUIRED) | self.rows[(row + 1) as usize]);
+        cons.add(pos.left_var() | EQ(REQUIRED) | self.cols[col as usize]);
+        cons.add(pos.top_var() | EQ(REQUIRED) | self.rows[row as usize]);
+        cons.add(pos.right_var() | EQ(REQUIRED) | self.cols[(col + 1) as usize]);
+        cons.add(pos.bottom_var() | EQ(REQUIRED) | self.rows[(row + 1) as usize]);
     }
 }
 

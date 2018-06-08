@@ -12,8 +12,8 @@ pub struct ConstraintsBuilder<'a> {
 impl<'a> ConstraintsBuilder<'a> {
     pub(super) fn new(pos: &'a Position) -> Self {
         let mut cons = FnvHashSet::with_capacity_and_hasher(2, Default::default());
-        cons.insert(pos.width() | GE(strength::REQUIRED) | 0.0);
-        cons.insert(pos.width() | GE(strength::REQUIRED) | 0.0);
+        cons.insert(pos.width_var() | GE(strength::REQUIRED) | 0.0);
+        cons.insert(pos.width_var() | GE(strength::REQUIRED) | 0.0);
         ConstraintsBuilder { pos, cons }
     }
 
@@ -24,21 +24,23 @@ impl<'a> ConstraintsBuilder<'a> {
 
     pub fn center(mut self, other: &Position, strength: f64) -> Self {
         self.cons.insert(
-            self.pos.left() - other.left() | EQ(strength) | other.right() - self.pos.right(),
+            self.pos.left_var() - other.left_var() | EQ(strength)
+                | other.right_var() - self.pos.right_var(),
         );
         self.cons.insert(
-            self.pos.top() - other.top() | EQ(strength) | other.bottom() - self.pos.bottom(),
+            self.pos.top_var() - other.top_var() | EQ(strength)
+                | other.bottom_var() - self.pos.bottom_var(),
         );
         self
     }
 
     pub fn min_width(self, width: f64, strength: f64) -> Self {
-        let con = self.pos.width() | GE(strength) | width;
+        let con = self.pos.width_var() | GE(strength) | width;
         self.with(con)
     }
 
     pub fn min_height(self, height: f64, strength: f64) -> Self {
-        let con = self.pos.height() | GE(strength) | height;
+        let con = self.pos.height_var() | GE(strength) | height;
         self.with(con)
     }
 
@@ -47,12 +49,12 @@ impl<'a> ConstraintsBuilder<'a> {
     }
 
     pub fn max_width(self, width: f64, strength: f64) -> Self {
-        let con = self.pos.width() | LE(strength) | width;
+        let con = self.pos.width_var() | LE(strength) | width;
         self.with(con)
     }
 
     pub fn max_height(self, height: f64, strength: f64) -> Self {
-        let con = self.pos.height() | LE(strength) | height;
+        let con = self.pos.height_var() | LE(strength) | height;
         self.with(con)
     }
 
@@ -61,12 +63,12 @@ impl<'a> ConstraintsBuilder<'a> {
     }
 
     pub fn width(self, width: f64, strength: f64) -> Self {
-        let con = self.pos.width() | EQ(strength) | width;
+        let con = self.pos.width_var() | EQ(strength) | width;
         self.with(con)
     }
 
     pub fn height(self, height: f64, strength: f64) -> Self {
-        let con = self.pos.height() | EQ(strength) | height;
+        let con = self.pos.height_var() | EQ(strength) | height;
         self.with(con)
     }
 

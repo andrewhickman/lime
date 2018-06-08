@@ -38,61 +38,83 @@ impl Position {
         }
     }
 
-    pub fn bl(&self) -> Point {
-        Point(self.vals[0], self.vals[3])
+    pub fn left(&self) -> f32 {
+        self.vals[0]
     }
 
-    pub fn tl(&self) -> Point {
-        Point(self.vals[0], self.vals[1])
+    pub fn top(&self) -> f32 {
+        self.vals[1]
     }
 
-    pub fn br(&self) -> Point {
-        Point(self.vals[2], self.vals[3])
+    pub fn right(&self) -> f32 {
+        self.vals[2]
     }
 
-    pub fn tr(&self) -> Point {
-        Point(self.vals[2], self.vals[1])
+    pub fn bottom(&self) -> f32 {
+        self.vals[3]
     }
 
-    pub fn left(&self) -> Variable {
-        self.vars[0]
-    }
-
-    pub fn top(&self) -> Variable {
-        self.vars[1]
-    }
-
-    pub fn right(&self) -> Variable {
-        self.vars[2]
-    }
-
-    pub fn bottom(&self) -> Variable {
-        self.vars[3]
-    }
-
-    pub fn width(&self) -> Expression {
+    pub fn width(&self) -> f32 {
         self.right() - self.left()
     }
 
-    pub fn height(&self) -> Expression {
+    pub fn height(&self) -> f32 {
         self.bottom() - self.top()
+    }
+
+    pub fn bottom_left(&self) -> Point {
+        Point(self.vals[0], self.vals[3])
+    }
+
+    pub fn top_left(&self) -> Point {
+        Point(self.vals[0], self.vals[1])
+    }
+
+    pub fn bottom_right(&self) -> Point {
+        Point(self.vals[2], self.vals[3])
+    }
+
+    pub fn top_right(&self) -> Point {
+        Point(self.vals[2], self.vals[1])
+    }
+
+    pub fn left_var(&self) -> Variable {
+        self.vars[0]
+    }
+
+    pub fn top_var(&self) -> Variable {
+        self.vars[1]
+    }
+
+    pub fn right_var(&self) -> Variable {
+        self.vars[2]
+    }
+
+    pub fn bottom_var(&self) -> Variable {
+        self.vars[3]
+    }
+
+    pub fn width_var(&self) -> Expression {
+        self.right_var() - self.left_var()
+    }
+
+    pub fn height_var(&self) -> Expression {
+        self.bottom_var() - self.top_var()
     }
 
     pub fn tris(&self) -> [Point; 6] {
         [
-            self.bl(),
-            self.tl(),
-            self.br(),
-            self.br(),
-            self.tl(),
-            self.tr(),
+            self.bottom_left(),
+            self.top_left(),
+            self.bottom_right(),
+            self.bottom_right(),
+            self.top_left(),
+            self.top_right(),
         ]
     }
 
     pub fn contains(&self, point: Point) -> bool {
-        self.vals[0] <= point.0
-            && point.0 < self.vals[2]
-            && self.vals[1] <= point.1
+        self.vals[0] <= point.0 && point.0 < self.vals[2] && self.vals[1] <= point.1
             && point.1 < self.vals[3]
     }
 
