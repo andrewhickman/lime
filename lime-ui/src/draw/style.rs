@@ -4,7 +4,7 @@ use specs::prelude::*;
 use specs_mirror::{StorageExt, StorageMutExt};
 
 use draw::Brush;
-use event::{Button, ButtonEvent, ButtonState};
+use widget::button::{Button, ButtonEvent, ButtonState};
 
 pub struct Style {
     def: Arc<StyleDef>,

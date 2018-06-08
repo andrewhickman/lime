@@ -1,10 +1,13 @@
+#[cfg(test)]
+mod tests;
+
 use cassowary::strength::*;
 use cassowary::WeightedRelation::*;
 use cassowary::{Constraint, Expression, Variable};
 use fnv::FnvHashSet;
 use specs::prelude::*;
 
-use super::{Constraints, Position};
+use layout::{Constraints, Position};
 
 pub struct Grid {
     rows: Vec<Variable>,

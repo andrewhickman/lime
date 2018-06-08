@@ -99,11 +99,13 @@ impl<'a> System<'a> for LayoutSystem {
     );
 
     fn run(&mut self, (dims_tx, mut cons, mut poss, viss): Self::SystemData) {
-        if let Some(dims) = dims_tx.read(&mut self.dims_rx).last() {
+        let resize = dims_tx.read(&mut self.dims_rx).last().cloned();
+        if let Some(dims) = resize {
             trace!("Resizing ui to '({}, {})'.", dims.width(), dims.height());
-            let LayoutSystem { width, height, .. } = self;
-            self.resize(*width, dims.width());
-            self.resize(*height, dims.height());
+            let width = self.width;
+            self.resize(width, dims.width());
+            let height = self.height;
+            self.resize(height, dims.height());
         }
 
         for vis_ev in viss.read_events(&mut self.vis_rx) {

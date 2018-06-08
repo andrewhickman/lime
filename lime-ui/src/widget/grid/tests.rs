@@ -1,15 +1,3 @@
-#[macro_use]
-extern crate approx;
-extern crate cassowary;
-extern crate lime_render as render;
-extern crate lime_ui as ui;
-extern crate lime_utils as utils;
-extern crate shrev;
-extern crate specs;
-extern crate specs_mirror;
-
-mod common;
-
 use std::iter;
 
 use cassowary::strength::*;
@@ -18,12 +6,12 @@ use render::ScreenDimensions;
 use shrev::EventChannel;
 use specs::prelude::*;
 use specs_mirror::StorageMutExt;
-use ui::draw::{Visibility, VisibilityState};
-use ui::layout::grid::Size;
-use ui::layout::{ConstraintsBuilder, Grid, Position};
-use ui::tree::{Node, Root};
 
-use common::init;
+use super::*;
+use draw::{Visibility, VisibilityState};
+use layout::{ConstraintsBuilder, Position};
+use tests::init_test;
+use tree::{Node, Root};
 
 fn create_root_grid(
     world: &mut World,
@@ -81,7 +69,7 @@ fn assert_approx_eq(l: Point, r: Point) {
 
 #[test]
 fn empty() {
-    let (mut world, mut dispatcher) = init([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     create_root_grid(&mut world, iter::empty(), iter::empty());
 
@@ -90,7 +78,7 @@ fn empty() {
 
 #[test]
 fn basic() {
-    let (mut world, mut dispatcher) = init([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     let grid = create_root_grid(
         &mut world,
@@ -144,7 +132,7 @@ fn basic() {
 
 #[test]
 fn auto() {
-    let (mut world, mut dispatcher) = init([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     let grid = create_root_grid(
         &mut world,
@@ -198,7 +186,7 @@ fn auto() {
 
 #[test]
 fn abs() {
-    let (mut world, mut dispatcher) = init([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     let grid = create_root_grid(
         &mut world,
@@ -243,7 +231,7 @@ fn abs() {
 
 #[test]
 fn rel() {
-    let (mut world, mut dispatcher) = init([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     let grid = create_root_grid(
         &mut world,
@@ -297,7 +285,7 @@ fn rel() {
 
 #[test]
 fn mix() {
-    let (mut world, mut dispatcher) = init([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     let grid = create_root_grid(
         &mut world,
@@ -369,7 +357,7 @@ fn mix() {
 
 #[test]
 fn size() {
-    let (mut world, mut dispatcher) = init([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     let grid = create_grid(
         &mut world,
@@ -402,7 +390,7 @@ fn set_visibility(world: &mut World, entity: Entity, state: VisibilityState) {
 
 #[test]
 fn visibility() {
-    let (mut world, mut dispatcher) = init([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     let grid = create_grid(&mut world, vec![Size::Auto], vec![Size::Auto]);
 

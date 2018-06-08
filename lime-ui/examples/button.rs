@@ -12,11 +12,12 @@ use std::sync::Arc;
 
 use cassowary::strength::*;
 use render::Color;
-use ui::draw::{Brush, StyleDef, Style};
-use ui::tree::{Node, Root};
-use ui::layout::Position;
-use ui::event::{EventSystem, Button};
 use specs::prelude::*;
+use ui::draw::{Brush, Style, StyleDef};
+use ui::event::EventSystem;
+use ui::layout::Position;
+use ui::tree::{Node, Root};
+use ui::widget::button::Button;
 use winit::{Event, EventsLoop, WindowEvent};
 
 fn main() {

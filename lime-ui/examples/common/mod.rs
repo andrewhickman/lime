@@ -1,8 +1,8 @@
 use render::{self, d3, Color};
 use specs::prelude::*;
 use ui;
-use ui::event::ButtonSystem;
 use ui::draw::{DrawUi, StyleSystem};
+use ui::widget::button::ButtonSystem;
 use winit::{EventsLoop, WindowBuilder};
 
 pub struct D3;

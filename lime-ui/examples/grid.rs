@@ -13,16 +13,15 @@ use std::iter;
 use cassowary::strength::*;
 use render::Color;
 use specs::prelude::*;
-use ui::layout::grid::Size;
-use ui::layout::{Grid, Position};
 use ui::draw::Brush;
+use ui::layout::Position;
 use ui::tree::{Node, Root};
+use ui::widget::grid::{Grid, Size};
 use winit::{Event, EventsLoop, WindowEvent};
 
 fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Color) -> Entity {
     let pos = Position::new();
-    let mut cons = pos
-        .constraints_builder()
+    let mut cons = pos.constraints_builder()
         .min_size((100.0, 100.0), STRONG)
         .build();
     world

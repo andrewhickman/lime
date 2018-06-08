@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::sync::Arc;
 
 use shrev::{EventChannel, ReaderId};
@@ -138,20 +141,20 @@ impl<'a> System<'a> for ButtonSystem {
 
     fn run(&mut self, (events, mut btns, mut tgls, rads): Self::SystemData) {
         for &event in events.read(&mut self.reader) {
-            match event.kind {
+            match event.kind() {
                 EventKind::Mouse(MouseEvent::Move(_, _)) => continue,
                 EventKind::Mouse(MouseEvent::MoveRaw(_, _)) => continue,
                 _ => (),
             };
 
-            if let Some((btn, btn_chan)) = btns.modify(event.entity) {
+            if let Some((btn, btn_chan)) = btns.modify(event.entity()) {
                 if let ButtonState::Disabled = btn.state {
                     continue;
                 }
 
-                if let Some(rad) = rads.get(event.entity) {
+                if let Some(rad) = rads.get(event.entity()) {
                     update_radio_button(event, btn_chan, btn, &mut tgls, rad);
-                } else if let Some((tgl, tgl_chan)) = tgls.modify(event.entity) {
+                } else if let Some((tgl, tgl_chan)) = tgls.modify(event.entity()) {
                     update_toggle_button(event, btn_chan, tgl_chan, btn, tgl);
                 } else {
                     update_button(event, btn_chan, btn);
@@ -165,7 +168,7 @@ fn update_button_common<'a>(event: Event, btn: &mut Button) -> Option<ButtonEven
     use self::MouseEvent::*;
 
     let old = btn.state;
-    let new = match event.kind {
+    let new = match event.kind() {
         EventKind::Mouse(Enter) => {
             debug_assert_eq!(old, ButtonState::Normal);
             ButtonState::Focused
@@ -188,7 +191,7 @@ fn update_button_common<'a>(event: Event, btn: &mut Button) -> Option<ButtonEven
     if old != new {
         btn.state = new;
         Some(ButtonEvent {
-            entity: event.entity,
+            entity: event.entity(),
             old,
             new,
         })
@@ -214,7 +217,7 @@ fn update_toggle_button<'a>(
         if btn_event.is_press() {
             tgl.state = !tgl.state;
             tgl_events.single_write(ToggleButtonEvent {
-                entity: event.entity,
+                entity: event.entity(),
                 state: tgl.state,
             });
         }
@@ -233,7 +236,7 @@ fn update_radio_button<'a>(
         if btn_event.is_press() {
             for &ent in rad.group.iter() {
                 if let Some((tgl, tgl_chan)) = tgls.modify(ent) {
-                    let state = ent == event.entity;
+                    let state = ent == event.entity();
                     if tgl.state != state {
                         tgl.state = state;
                         tgl_chan.single_write(ToggleButtonEvent { entity: ent, state });

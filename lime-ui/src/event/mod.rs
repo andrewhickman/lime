@@ -1,20 +1,20 @@
-mod button;
+#[cfg(test)]
+pub mod tests;
+
 mod keyboard;
 mod mouse;
 mod sys;
 
-pub use self::button::{Button, ButtonEvent, ButtonState, ButtonSystem, RadioButton, ToggleButton,
-                       ToggleButtonEvent};
 pub use self::keyboard::{KeyboardEvent, KeyboardFocus};
-pub use self::mouse::{MouseEvent, MouseHover};
+pub use self::mouse::{MouseEvent, MouseFocus};
 pub use self::sys::EventSystem;
 
 use specs::prelude::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Event {
-    pub kind: EventKind,
-    pub entity: Entity,
+    kind: EventKind,
+    entity: Entity,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -24,17 +24,25 @@ pub enum EventKind {
 }
 
 impl Event {
-    fn keyboard(event: KeyboardEvent, entity: Entity) -> Self {
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
+
+    pub fn kind(&self) -> EventKind {
+        self.kind
+    }
+
+    fn keyboard(entity: Entity, event: KeyboardEvent) -> Self {
         Event {
-            kind: EventKind::Keyboard(event),
             entity,
+            kind: EventKind::Keyboard(event),
         }
     }
 
-    fn mouse(event: MouseEvent, entity: Entity) -> Self {
+    fn mouse(entity: Entity, event: MouseEvent) -> Self {
         Event {
-            kind: EventKind::Mouse(event),
             entity,
+            kind: EventKind::Mouse(event),
         }
     }
 }

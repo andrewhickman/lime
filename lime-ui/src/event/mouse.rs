@@ -15,13 +15,13 @@ pub enum MouseEvent {
     ButtonDown(MouseButton, ModifiersState),
 }
 
-pub struct MouseHover {
+pub struct MouseFocus {
     pub(in event) entity: Option<Entity>,
 }
 
-impl MouseHover {
+impl MouseFocus {
     pub(crate) fn new() -> Self {
-        MouseHover { entity: None }
+        MouseFocus { entity: None }
     }
 
     pub fn entity(&self) -> Option<Entity> {
