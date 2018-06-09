@@ -9,11 +9,14 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 cassowary = "0.3.0"
+erased-serde = "0.3.3"
+failure = "0.1.1"
 fnv = "1"
 hibitset = "0.5.0"
 lime-render = { path = "../lime-render", version = "0.1.0" }
 lime-utils = { path = "../lime-utils", version = "0.1.0" }
 log = "0.4.1"
+serde = "1.0.66"
 shrev = "1.0.1"
 specs = "0.11.2"
 specs-mirror = "0.4.0"

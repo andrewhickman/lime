@@ -1,8 +1,11 @@
 extern crate cassowary;
+extern crate erased_serde;
+extern crate failure;
 extern crate fnv;
 extern crate hibitset;
 extern crate lime_render as render;
 extern crate lime_utils as utils;
+extern crate serde;
 extern crate shrev;
 extern crate specs;
 extern crate specs_mirror;
@@ -16,6 +19,7 @@ extern crate env_logger;
 #[macro_use]
 extern crate approx;
 
+pub mod de;
 pub mod draw;
 pub mod event;
 pub mod layout;
