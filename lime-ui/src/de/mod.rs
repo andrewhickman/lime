@@ -1,9 +1,10 @@
-use std::borrow::Cow;
+#[cfg(test)]
+mod tests;
+
 use std::fmt;
 use std::marker::PhantomData;
 
 use erased_serde as erased;
-use failure;
 use fnv::FnvHashMap;
 use serde::de;
 use specs::prelude::*;
@@ -28,7 +29,7 @@ where
 
 #[derive(Default)]
 pub struct Registry {
-    map: FnvHashMap<Cow<'static, str>, Box<DeserializeComponent>>,
+    map: FnvHashMap<&'static str, Box<DeserializeComponent>>,
 }
 
 impl Registry {
@@ -38,19 +39,18 @@ impl Registry {
         }
     }
 
-    pub fn register<S, C>(&mut self, key: S)
+    pub fn register<C>(&mut self, key: &'static str)
     where
-        S: Into<Cow<'static, str>>,
         C: de::DeserializeOwned + Component + Send + Sync,
     {
-        self.map.insert(key.into(), Box::new(PhantomData::<C>));
+        self.map.insert(key, Box::new(PhantomData::<C>));
     }
 }
 
 #[derive(Copy, Clone)]
 struct Inner<'a> {
     res: &'a Resources,
-    map: &'a FnvHashMap<Cow<'static, str>, Box<DeserializeComponent>>,
+    map: &'a FnvHashMap<&'static str, Box<DeserializeComponent>>,
 }
 
 #[derive(Copy, Clone)]
@@ -62,7 +62,7 @@ trait DeserializeComponent {
         deserializer: &mut erased::Deserializer<'de>,
         entity: Entity,
         res: &Resources,
-    ) -> Result<(), failure::Error>;
+    ) -> Result<(), erased::Error>;
 }
 
 impl<C> DeserializeComponent for PhantomData<C>
@@ -74,10 +74,10 @@ where
         deserializer: &mut erased::Deserializer<'de>,
         entity: Entity,
         res: &Resources,
-    ) -> Result<(), failure::Error> {
+    ) -> Result<(), erased::Error> {
         let comp = C::deserialize(deserializer)?;
         let mut storage = WriteStorage::<C>::fetch(res);
-        storage.insert(entity, comp)?;
+        storage.insert(entity, comp).unwrap(); // entity just created so this shouldn't fail.
         Ok(())
     }
 }

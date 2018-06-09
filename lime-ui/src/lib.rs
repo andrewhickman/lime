@@ -1,6 +1,5 @@
 extern crate cassowary;
 extern crate erased_serde;
-extern crate failure;
 extern crate fnv;
 extern crate hibitset;
 extern crate lime_render as render;
@@ -8,16 +7,23 @@ extern crate lime_utils as utils;
 extern crate serde;
 extern crate shrev;
 extern crate specs;
+#[macro_use]
+extern crate specs_derive;
 extern crate specs_mirror;
 #[macro_use]
 extern crate log;
 extern crate winit;
 
 #[cfg(test)]
+#[macro_use]
+extern crate approx;
+#[cfg(test)]
 extern crate env_logger;
 #[cfg(test)]
 #[macro_use]
-extern crate approx;
+extern crate serde_derive;
+#[cfg(test)]
+extern crate serde_json;
 
 pub mod de;
 pub mod draw;
