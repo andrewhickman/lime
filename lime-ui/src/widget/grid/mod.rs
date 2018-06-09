@@ -9,6 +9,8 @@ use specs::prelude::*;
 
 use layout::{Constraints, Position};
 
+#[derive(Component)]
+#[storage(HashMapStorage)]
 pub struct Grid {
     rows: Vec<Variable>,
     cols: Vec<Variable>,
@@ -22,10 +24,6 @@ pub enum Size {
     Rel(f64),
     // Space required is decided by children.
     Auto,
-}
-
-impl Component for Grid {
-    type Storage = HashMapStorage<Self>;
 }
 
 impl Grid {

@@ -13,17 +13,13 @@ use specs::prelude::*;
 use layout::Position;
 use tree::{self, Node, Root};
 
-#[derive(Clone)]
+#[derive(Clone, Component)]
 pub enum Brush {
     Color(Color),
     Style(Arc<Style>),
 }
 
 pub struct DrawUi;
-
-impl Component for Brush {
-    type Storage = DenseVecStorage<Self>;
-}
 
 impl Style for Brush {
     fn draw(&self, ent: Entity, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {

@@ -9,7 +9,7 @@ use specs_mirror::{StorageExt, StorageMutExt};
 use utils::throw;
 
 use draw::{Visibility, VisibilityEvent};
-use layout::cons::{ConstraintStorage, ConstraintUpdate};
+use layout::cons::{ConstraintUpdate, ConstraintsStorage};
 use layout::{Constraints, Position};
 use tree::Root;
 
@@ -120,7 +120,7 @@ impl<'a> System<'a> for LayoutSystem {
             }
         }
 
-        ConstraintStorage::handle_updates(&mut cons, |update| match update {
+        ConstraintsStorage::handle_updates(&mut cons, |update| match update {
             ConstraintUpdate::Add(con) => self.add_constraint(con),
             ConstraintUpdate::Remove(con) => self.remove_constraint(con),
         });

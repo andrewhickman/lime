@@ -1,6 +1,6 @@
 mod store;
 
-pub use self::store::ConstraintStorage;
+pub use self::store::ConstraintsStorage;
 
 use std::iter::FromIterator;
 use std::mem;
@@ -21,7 +21,7 @@ pub(in layout) enum ConstraintUpdate {
 }
 
 impl Component for Constraints {
-    type Storage = ConstraintStorage;
+    type Storage = ConstraintsStorage;
 }
 
 impl Constraints {

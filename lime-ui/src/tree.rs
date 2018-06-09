@@ -1,13 +1,9 @@
 use specs::prelude::*;
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub struct Node {
     parent: Option<Entity>,
     children: Vec<Entity>,
-}
-
-impl Component for Node {
-    type Storage = DenseVecStorage<Self>;
 }
 
 impl Node {

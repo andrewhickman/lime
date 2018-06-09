@@ -6,13 +6,13 @@ use specs::world::Index;
 use super::{ConstraintUpdate, Constraints};
 
 #[derive(Default)]
-pub struct ConstraintStorage {
+pub struct ConstraintsStorage {
     store: DenseVecStorage<Constraints>,
     // Updates flushed on removal of Constraints.
     updates: Vec<ConstraintUpdate>,
 }
 
-impl ConstraintStorage {
+impl ConstraintsStorage {
     pub(in layout) fn handle_updates<F>(store: &mut WriteStorage<Constraints>, mut handle: F)
     where
         F: FnMut(ConstraintUpdate),
@@ -29,7 +29,7 @@ impl ConstraintStorage {
     }
 }
 
-impl UnprotectedStorage<Constraints> for ConstraintStorage {
+impl UnprotectedStorage<Constraints> for ConstraintsStorage {
     unsafe fn clean<B>(&mut self, has: B)
     where
         B: BitSetLike,
