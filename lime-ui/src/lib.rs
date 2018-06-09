@@ -28,18 +28,11 @@ mod tests;
 use shrev::EventChannel;
 use specs::World;
 
-pub fn init(
-    world: &mut World,
-) -> (
-    layout::LayoutSystem,
-    widget::button::ButtonSystem,
-    draw::StyleSystem,
-) {
+pub fn init(world: &mut World) -> (layout::LayoutSystem, widget::button::ButtonSystem) {
     world.register::<layout::Constraints>();
     world.register::<layout::Position>();
     world.register::<tree::Node>();
     world.register::<draw::Brush>();
-    world.register::<draw::Style>();
     world.register::<draw::Visibility>();
     world.register::<widget::button::Button>();
     world.register::<widget::button::ToggleButton>();
@@ -53,7 +46,6 @@ pub fn init(
     world.add_resource(EventChannel::<event::Event>::new());
     let layout_sys = layout::LayoutSystem::new(world);
     let button_sys = widget::button::ButtonSystem::new(world);
-    let style_sys = draw::StyleSystem::new(world);
 
-    (layout_sys, button_sys, style_sys)
+    (layout_sys, button_sys)
 }

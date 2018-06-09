@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use specs_mirror::{StorageExt, StorageMutExt};
-use winit::ModifiersState;
+use winit::{ModifiersState, MouseButton};
 
 use super::*;
 use event::tests::emit_mouse_event;
@@ -42,8 +42,8 @@ fn was_toggled(
 
 #[test]
 fn button() {
-    use self::ButtonState::*;
-    use self::MouseEvent::*;
+    use event::MouseEvent::*;
+    use widget::button::ButtonState::*;
 
     let (mut world, mut dispatcher) = init_test([0, 0].into());
     let mut reader = world.write_storage::<Button>().register_reader();
@@ -119,8 +119,8 @@ fn button() {
 
 #[test]
 fn toggle_button() {
-    use self::ButtonState::*;
-    use self::MouseEvent::*;
+    use event::MouseEvent::*;
+    use widget::button::ButtonState::*;
 
     let (mut world, mut dispatcher) = init_test([1500, 1500].into());
     let mut btn_rdr = world.write_storage::<Button>().register_reader();
@@ -207,8 +207,8 @@ fn toggle_button() {
 
 #[test]
 fn radio_button() {
-    use self::ButtonState::*;
-    use self::MouseEvent::*;
+    use event::MouseEvent::*;
+    use widget::button::ButtonState::*;
 
     let (mut world, mut dispatcher) = init_test([1500, 1500].into());
     let mut btn_rdr = world.write_storage::<Button>().register_reader();

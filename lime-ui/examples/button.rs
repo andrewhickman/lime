@@ -13,11 +13,11 @@ use std::sync::Arc;
 use cassowary::strength::*;
 use render::Color;
 use specs::prelude::*;
-use ui::draw::{Brush, Style, StyleDef};
+use ui::draw::Brush;
 use ui::event::EventSystem;
 use ui::layout::Position;
 use ui::tree::{Node, Root};
-use ui::widget::button::Button;
+use ui::widget::button::{Button, ButtonStyle};
 use winit::{Event, EventsLoop, WindowEvent};
 
 fn main() {
@@ -38,21 +38,18 @@ fn main() {
             .build()
     };
 
-    let style_def = Arc::new(StyleDef {
-        btn_disabled: Brush::Color(Color::new(0.2, 0.2, 0.2, 1.0)),
-        btn_normal: Brush::Color(Color::RED),
-        btn_focused: Brush::Color(Color::GREEN),
-        btn_pressed: Brush::Color(Color::BLUE),
+    let btn_style = Arc::new(ButtonStyle {
+        disabled: Brush::Color(Color::new(0.2, 0.2, 0.2, 1.0)),
+        normal: Brush::Color(Color::RED),
+        focused: Brush::Color(Color::GREEN),
+        pressed: Brush::Color(Color::BLUE),
     });
-
-    let style = Style::new(style_def.clone());
 
     Node::with_parent(world.create_entity(), root)
         .with(pos)
         .with(cons)
         .with(Button::new(true))
-        .with(style)
-        .with(style_def.btn_normal.clone())
+        .with(Brush::Style(btn_style))
         .build();
 
     let mut quit = false;
