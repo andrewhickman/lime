@@ -4,9 +4,8 @@ use erased_serde as erased;
 use fnv::FnvHashMap;
 use serde::de;
 use specs::prelude::*;
-use specs::world::EntitiesRes;
 
-use de::{DeserializeComponentFn, Registry, Seed};
+use de::{get_entity, DeserializeComponentFn, Registry, Seed};
 
 pub fn deserialize<'de, D>(
     deserializer: D,
@@ -48,22 +47,24 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for UiSeed<'de, 'a> {
                 write!(f, "sequence of entities")
             }
 
-            fn visit_seq<A>(mut self, mut seq: A) -> Result<Self::Value, A::Error>
+            fn visit_map<A>(mut self, mut map: A) -> Result<Self::Value, A::Error>
             where
-                A: de::SeqAccess<'de>,
+                A: de::MapAccess<'de>,
             {
-                while seq.next_element_seed(EntitySeed {
-                    res: &self.0.res,
-                    reg: &self.0.reg,
-                    names: &mut self.0.names,
-                })?
-                    .is_some()
-                {}
+                while let Some(name) = map.next_key::<&str>()? {
+                    let entity = get_entity(name, &mut self.0.names, &*self.0.res.fetch());
+                    map.next_value_seed(EntitySeed {
+                        res: &self.0.res,
+                        reg: &self.0.reg,
+                        names: &mut self.0.names,
+                        entity,
+                    })?;
+                }
                 Ok(())
             }
         }
 
-        deserializer.deserialize_seq(Visitor(self))
+        deserializer.deserialize_map(Visitor(self))
     }
 }
 
@@ -71,6 +72,7 @@ struct EntitySeed<'de: 'a, 'a> {
     res: &'a Resources,
     reg: &'a FnvHashMap<&'static str, DeserializeComponentFn>,
     names: &'a mut FnvHashMap<&'de str, Entity>,
+    entity: Entity,
 }
 
 impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
@@ -93,17 +95,16 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
             where
                 A: de::MapAccess<'de>,
             {
-                let entity = self.0.res.fetch::<EntitiesRes>().create();
                 while let Some(key) = map.next_key::<&str>()? {
                     if let Some(&de) = self.0.reg.get(key) {
                         map.next_value_seed(ComponentSeed {
-                            entity,
+                            entity: self.0.entity,
                             res: self.0.res,
                             de,
                             names: &mut self.0.names,
                         })?;
                     } else {
-                        return Err(<A::Error as de::Error>::custom("key not in registry"));
+                        return Err(de::Error::custom(format!("key '{}' not in registry", key)));
                     }
                 }
                 Ok(())
@@ -137,6 +138,6 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for ComponentSeed<'de, 'a> {
             },
             &mut deserializer,
             self.entity,
-        ).map_err(<D::Error as de::Error>::custom)
+        ).map_err(de::Error::custom)
     }
 }
