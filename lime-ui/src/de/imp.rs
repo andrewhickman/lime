@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt;
 
 use erased_serde as erased;
@@ -28,7 +29,7 @@ where
 struct UiSeed<'de: 'a, 'a> {
     res: &'a Resources,
     reg: &'a FnvHashMap<&'static str, DeserializeComponentFn>,
-    names: &'a mut FnvHashMap<&'de str, Entity>,
+    names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
 }
 
 impl<'de: 'a, 'a> de::DeserializeSeed<'de> for UiSeed<'de, 'a> {
@@ -51,12 +52,12 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for UiSeed<'de, 'a> {
             where
                 A: de::MapAccess<'de>,
             {
-                while let Some(name) = map.next_key::<&str>()? {
+                while let Some(name) = map.next_key::<Cow<str>>()? {
                     let entity = get_entity(name, &mut self.0.names, &*self.0.res.fetch());
                     map.next_value_seed(EntitySeed {
-                        res: &self.0.res,
-                        reg: &self.0.reg,
-                        names: &mut self.0.names,
+                        res: self.0.res,
+                        reg: self.0.reg,
+                        names: self.0.names,
                         entity,
                     })?;
                 }
@@ -71,7 +72,7 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for UiSeed<'de, 'a> {
 struct EntitySeed<'de: 'a, 'a> {
     res: &'a Resources,
     reg: &'a FnvHashMap<&'static str, DeserializeComponentFn>,
-    names: &'a mut FnvHashMap<&'de str, Entity>,
+    names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
     entity: Entity,
 }
 
@@ -91,17 +92,17 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
                 write!(f, "map of strings to components")
             }
 
-            fn visit_map<A>(mut self, mut map: A) -> Result<Self::Value, A::Error>
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
             where
                 A: de::MapAccess<'de>,
             {
-                while let Some(key) = map.next_key::<&str>()? {
-                    if let Some(&de) = self.0.reg.get(key) {
+                while let Some(key) = map.next_key::<Cow<str>>()? {
+                    if let Some(&de) = self.0.reg.get(key.as_ref()) {
                         map.next_value_seed(ComponentSeed {
                             entity: self.0.entity,
                             res: self.0.res,
                             de,
-                            names: &mut self.0.names,
+                            names: self.0.names,
                         })?;
                     } else {
                         return Err(de::Error::custom(format!("key '{}' not in registry", key)));
@@ -118,7 +119,7 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
 pub struct ComponentSeed<'de: 'a, 'a> {
     entity: Entity,
     res: &'a Resources,
-    names: &'a mut FnvHashMap<&'de str, Entity>,
+    names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
     de: DeserializeComponentFn,
 }
 

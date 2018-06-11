@@ -1,3 +1,5 @@
+use std::io::Cursor;
+
 use serde_json::Deserializer;
 use specs::prelude::*;
 
@@ -108,7 +110,7 @@ fn name() {
             D: de::Deserializer<'de>,
         {
             #[derive(Deserialize)]
-            struct Comp2De<'a>(#[serde(borrow)] &'a str);
+            struct Comp2De<'a>(#[serde(borrow)] Cow<'a, str>);
 
             let Comp2De(name) = <Comp2De as de::Deserialize>::deserialize(deserializer)?;
             let entity = seed.get_entity(name);
@@ -116,31 +118,42 @@ fn name() {
         }
     }
 
-    let mut world = World::new();
+    let mut world_str = World::new();
+    let mut world_rdr = World::new();
     let mut registry = Registry::new();
-    world.register::<Comp1>();
+    world_str.register::<Comp1>();
+    world_rdr.register::<Comp1>();
     registry.register::<Comp1>("comp1");
-    world.register::<Comp2>();
+    world_str.register::<Comp2>();
+    world_rdr.register::<Comp2>();
     registry.register::<Comp2>("comp2");
 
-    deserialize(&mut Deserializer::from_str(DATA), &registry, &world.res).unwrap();
-    world.maintain();
+    deserialize(&mut Deserializer::from_str(DATA), &registry, &world_str.res).unwrap();
+    deserialize(
+        &mut Deserializer::from_reader(Cursor::new(DATA)),
+        &registry,
+        &world_rdr.res,
+    ).unwrap();
+    world_str.maintain();
+    world_rdr.maintain();
 
-    let ents: Vec<Entity> = (&*world.entities()).join().collect();
-    assert_eq!(ents.len(), 4);
+    for world in vec![world_str, world_rdr] {
+        let ents: Vec<Entity> = (&*world.entities()).join().collect();
+        assert_eq!(ents.len(), 4);
 
-    let comp1s = world.read_storage::<Comp1>();
-    let comp2s = world.read_storage::<Comp2>();
+        let comp1s = world.read_storage::<Comp1>();
+        let comp2s = world.read_storage::<Comp2>();
 
-    assert_eq!(comp1s.get(ents[0]), Some(&Comp1(5)));
-    assert_eq!(comp2s.get(ents[0]), Some(&Comp2(ents[1])));
+        assert_eq!(comp1s.get(ents[0]), Some(&Comp1(5)));
+        assert_eq!(comp2s.get(ents[0]), Some(&Comp2(ents[1])));
 
-    assert_eq!(comp1s.get(ents[1]), Some(&Comp1(6)));
-    assert_eq!(comp2s.get(ents[1]), None);
+        assert_eq!(comp1s.get(ents[1]), Some(&Comp1(6)));
+        assert_eq!(comp2s.get(ents[1]), None);
 
-    assert_eq!(comp1s.get(ents[2]), None);
-    assert_eq!(comp2s.get(ents[2]), Some(&Comp2(ents[1])));
+        assert_eq!(comp1s.get(ents[2]), None);
+        assert_eq!(comp2s.get(ents[2]), Some(&Comp2(ents[1])));
 
-    assert_eq!(comp1s.get(ents[3]), None);
-    assert_eq!(comp2s.get(ents[3]), Some(&Comp2(ents[0])));
+        assert_eq!(comp1s.get(ents[3]), None);
+        assert_eq!(comp2s.get(ents[3]), Some(&Comp2(ents[0])));
+    }
 }

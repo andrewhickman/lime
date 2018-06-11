@@ -4,6 +4,8 @@ mod tests;
 
 pub use self::imp::deserialize;
 
+use std::borrow::Cow;
+
 use erased_serde as erased;
 use fnv::FnvHashMap;
 use serde::de;
@@ -11,20 +13,20 @@ use specs::prelude::*;
 use specs::world::EntitiesRes;
 
 pub struct Seed<'de: 'a, 'a> {
-    names: &'a mut FnvHashMap<&'de str, Entity>,
+    names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
     ents: &'a EntitiesRes,
     res: &'a Resources,
 }
 
 impl<'de, 'a> Seed<'de, 'a> {
-    pub fn get_entity(&mut self, name: &'de str) -> Entity {
+    pub fn get_entity(&mut self, name: Cow<'de, str>) -> Entity {
         get_entity(name, &mut self.names, &self.ents)
     }
 }
 
 fn get_entity<'de, 'a>(
-    name: &'de str,
-    names: &'a mut FnvHashMap<&'de str, Entity>,
+    name: Cow<'de, str>,
+    names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
     ents: &'a EntitiesRes,
 ) -> Entity {
     *names.entry(name).or_insert_with(|| ents.create())
