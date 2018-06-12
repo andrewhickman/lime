@@ -1,18 +1,17 @@
 use std::borrow::Cow;
 use std::fmt;
 
-use erased_serde as erased;
 use fnv::FnvHashMap;
-use serde::de;
+use serde::de as serde;
 use specs::prelude::*;
 
 use de::{get_entity, Registry, Seed};
 
 pub fn deserialize<'de, D>(deserializer: D, reg: &Registry, res: &Resources) -> Result<(), D::Error>
 where
-    D: de::Deserializer<'de>,
+    D: serde::Deserializer<'de>,
 {
-    de::DeserializeSeed::deserialize(
+    serde::DeserializeSeed::deserialize(
         UiSeed {
             reg,
             res,
@@ -28,16 +27,16 @@ struct UiSeed<'de: 'a, 'a> {
     names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
 }
 
-impl<'de: 'a, 'a> de::DeserializeSeed<'de> for UiSeed<'de, 'a> {
+impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for UiSeed<'de, 'a> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-        D: de::Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
         struct Visitor<'de: 'a, 'a>(UiSeed<'de, 'a>);
 
-        impl<'de, 'a> de::Visitor<'de> for Visitor<'de, 'a> {
+        impl<'de, 'a> serde::Visitor<'de> for Visitor<'de, 'a> {
             type Value = ();
 
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -46,7 +45,7 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for UiSeed<'de, 'a> {
 
             fn visit_map<A>(mut self, mut map: A) -> Result<Self::Value, A::Error>
             where
-                A: de::MapAccess<'de>,
+                A: serde::MapAccess<'de>,
             {
                 while let Some(name) = map.next_key::<Cow<str>>()? {
                     let entity = get_entity(name, &mut self.0.names, &*self.0.res.fetch());
@@ -72,16 +71,16 @@ struct EntitySeed<'de: 'a, 'a> {
     entity: Entity,
 }
 
-impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
+impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
     type Value = ();
 
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
-        D: de::Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
         struct Visitor<'de: 'a, 'a>(EntitySeed<'de, 'a>);
 
-        impl<'de, 'a> de::Visitor<'de> for Visitor<'de, 'a> {
+        impl<'de, 'a> serde::Visitor<'de> for Visitor<'de, 'a> {
             type Value = ();
 
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -90,49 +89,20 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
 
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
             where
-                A: de::MapAccess<'de>,
+                A: serde::MapAccess<'de>,
             {
                 while let Some(key) = map.next_key::<Cow<str>>()? {
-                    map.next_value_seed(ComponentSeed {
+                    map.next_value_seed(Seed {
                         entity: self.0.entity,
                         res: self.0.res,
                         reg: self.0.reg,
-                        de: self.0.reg.get(key)?,
                         names: self.0.names,
-                    })?;
+                    }.get_deserialize_fn(key)?)?;
                 }
                 Ok(())
             }
         }
 
         deserializer.deserialize_map(Visitor(self))
-    }
-}
-
-pub struct ComponentSeed<'de: 'a, 'a> {
-    entity: Entity,
-    res: &'a Resources,
-    reg: &'a Registry,
-    names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
-    de: &'a Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<(), erased::Error>,
-}
-
-impl<'de: 'a, 'a> de::DeserializeSeed<'de> for ComponentSeed<'de, 'a> {
-    type Value = ();
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: de::Deserializer<'de>,
-    {
-        let mut deserializer = erased::Deserializer::erase(deserializer);
-        (self.de)(
-            Seed {
-                entity: self.entity,
-                names: self.names,
-                reg: self.reg,
-                res: self.res,
-            },
-            &mut deserializer,
-        ).map_err(de::Error::custom)
     }
 }

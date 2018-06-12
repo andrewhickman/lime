@@ -1,7 +1,7 @@
 use vulkano::pipeline::vertex::{VertexMember, VertexMemberTy};
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Point(pub f32, pub f32);
 
 impl Point {

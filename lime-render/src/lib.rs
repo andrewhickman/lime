@@ -4,8 +4,11 @@ extern crate failure;
 extern crate lime_utils as utils;
 #[macro_use]
 extern crate log;
+extern crate serde;
 extern crate shrev;
 extern crate specs;
+#[macro_use]
+extern crate serde_derive;
 #[macro_use]
 extern crate vulkano;
 #[macro_use]
