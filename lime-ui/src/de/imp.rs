@@ -93,16 +93,13 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
                 A: de::MapAccess<'de>,
             {
                 while let Some(key) = map.next_key::<Cow<str>>()? {
-                    if let Some(de) = self.0.reg.map.get(key.as_ref()) {
-                        map.next_value_seed(ComponentSeed {
-                            entity: self.0.entity,
-                            res: self.0.res,
-                            de: &**de,
-                            names: self.0.names,
-                        })?;
-                    } else {
-                        return Err(de::Error::custom(format!("key '{}' not in registry", key)));
-                    }
+                    map.next_value_seed(ComponentSeed {
+                        entity: self.0.entity,
+                        res: self.0.res,
+                        reg: self.0.reg,
+                        de: self.0.reg.get(key)?,
+                        names: self.0.names,
+                    })?;
                 }
                 Ok(())
             }
@@ -115,6 +112,7 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
 pub struct ComponentSeed<'de: 'a, 'a> {
     entity: Entity,
     res: &'a Resources,
+    reg: &'a Registry,
     names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
     de: &'a Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<(), erased::Error>,
 }
@@ -131,6 +129,7 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for ComponentSeed<'de, 'a> {
             Seed {
                 entity: self.entity,
                 names: self.names,
+                reg: self.reg,
                 res: self.res,
             },
             &mut deserializer,

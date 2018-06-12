@@ -16,12 +16,31 @@ use specs::world::EntitiesRes;
 pub struct Seed<'de: 'a, 'a> {
     names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
     res: &'a Resources,
+    reg: &'a Registry,
     entity: Entity,
 }
 
 impl<'de, 'a> Seed<'de, 'a> {
     pub fn get_entity(&mut self, name: Cow<'de, str>) -> Entity {
         get_entity(name, &mut self.names, &*self.res.fetch())
+    }
+
+    pub fn deserialize(
+        &mut self,
+        key: Cow<'de, str>,
+        deserializer: &mut erased::Deserializer<'de>,
+    ) -> Result<(), erased::Error> {
+        self.reg.get(key).and_then(|de| {
+            de(
+                Seed {
+                    names: self.names,
+                    res: self.res,
+                    reg: self.reg,
+                    entity: self.entity,
+                },
+                deserializer,
+            )
+        })
     }
 }
 
@@ -114,6 +133,20 @@ impl Registry {
     {
         if self.map.insert(key, Box::new(f)).is_some() {
             panic!("component '{}' already added", key);
+        }
+    }
+
+    fn get<'de, 'a, E>(
+        &'a self,
+        key: Cow<'de, str>,
+    ) -> Result<&'a Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<(), erased::Error>, E>
+    where
+        E: de::Error,
+    {
+        if let Some(de) = self.map.get(key.as_ref()) {
+            Ok(&**de)
+        } else {
+            Err(de::Error::custom(format!("key '{}' not in registry", key)))
         }
     }
 }
