@@ -1,5 +1,6 @@
 use std::io::Cursor;
 
+use serde::de;
 use serde_json::Deserializer;
 use specs::prelude::*;
 
@@ -101,6 +102,20 @@ fn name() {
     #[derive(Clone, Debug, Component, Hash, Eq, PartialEq)]
     struct Comp2(Entity);
 
+    impl Deserialize for Comp2 {
+        fn deserialize<'de, 'a>(
+            mut seed: Seed<'de, 'a>,
+            deserializer: &mut erased::Deserializer<'de>,
+        ) -> Result<Self, erased::Error> {
+            #[derive(Deserialize)]
+            struct Comp2De<'a>(#[serde(borrow)] Cow<'a, str>);
+
+            let Comp2De(name) = <Comp2De as de::Deserialize>::deserialize(deserializer)?;
+            let entity = seed.get_entity(name);
+            Ok(Comp2(entity))
+        }
+    }
+
     let mut world_str = World::new();
     let mut world_rdr = World::new();
     let mut registry = Registry::new();
@@ -109,14 +124,7 @@ fn name() {
     registry.register::<Comp1>("comp1");
     world_str.register::<Comp2>();
     world_rdr.register::<Comp2>();
-    registry.register_with_deserialize("comp2", |mut seed, deserializer| {
-        #[derive(Deserialize)]
-        struct Comp2De<'a>(#[serde(borrow)] Cow<'a, str>);
-
-        let Comp2De(name) = <Comp2De as de::Deserialize>::deserialize(deserializer)?;
-        let entity = seed.get_entity(name);
-        Ok(Comp2(entity))
-    });
+    registry.register_with_deserialize::<Comp2>("comp2");
 
     deserialize(&mut Deserializer::from_str(DATA), &registry, &world_str.res).unwrap();
     deserialize(
