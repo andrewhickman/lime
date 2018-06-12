@@ -1,7 +1,5 @@
-mod style;
 mod visibility;
 
-pub use self::style::Style;
 pub use self::visibility::{Visibility, VisibilityEvent, VisibilityState};
 
 use std::sync::Arc;
@@ -12,6 +10,10 @@ use specs::prelude::*;
 
 use layout::Position;
 use tree::{self, Node, Root};
+
+pub trait Style: Send + Sync + 'static {
+    fn draw(&self, ent: Entity, res: &Resources, visitor: &mut FnMut(&[Point], Color));
+}
 
 #[derive(Clone, Component)]
 pub enum Brush {
