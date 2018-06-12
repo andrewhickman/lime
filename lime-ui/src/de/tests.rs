@@ -101,23 +101,6 @@ fn name() {
     #[derive(Clone, Debug, Component, Hash, Eq, PartialEq)]
     struct Comp2(Entity);
 
-    impl DeserializeComponent for Comp2 {
-        fn deserialize<'de, 'a, D>(
-            mut seed: Seed<'de, 'a>,
-            deserializer: D,
-        ) -> Result<Self, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            #[derive(Deserialize)]
-            struct Comp2De<'a>(#[serde(borrow)] Cow<'a, str>);
-
-            let Comp2De(name) = <Comp2De as de::Deserialize>::deserialize(deserializer)?;
-            let entity = seed.get_entity(name);
-            Ok(Comp2(entity))
-        }
-    }
-
     let mut world_str = World::new();
     let mut world_rdr = World::new();
     let mut registry = Registry::new();
@@ -126,7 +109,14 @@ fn name() {
     registry.register::<Comp1>("comp1");
     world_str.register::<Comp2>();
     world_rdr.register::<Comp2>();
-    registry.register::<Comp2>("comp2");
+    registry.register_with_deserialize("comp2", |mut seed, deserializer| {
+        #[derive(Deserialize)]
+        struct Comp2De<'a>(#[serde(borrow)] Cow<'a, str>);
+
+        let Comp2De(name) = <Comp2De as de::Deserialize>::deserialize(deserializer)?;
+        let entity = seed.get_entity(name);
+        Ok(Comp2(entity))
+    });
 
     deserialize(&mut Deserializer::from_str(DATA), &registry, &world_str.res).unwrap();
     deserialize(

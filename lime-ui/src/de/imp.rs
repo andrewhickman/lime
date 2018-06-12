@@ -6,19 +6,15 @@ use fnv::FnvHashMap;
 use serde::de;
 use specs::prelude::*;
 
-use de::{get_entity, DeserializeComponentFn, Registry, Seed};
+use de::{get_entity, Registry, Seed};
 
-pub fn deserialize<'de, D>(
-    deserializer: D,
-    registry: &Registry,
-    res: &Resources,
-) -> Result<(), D::Error>
+pub fn deserialize<'de, D>(deserializer: D, reg: &Registry, res: &Resources) -> Result<(), D::Error>
 where
     D: de::Deserializer<'de>,
 {
     de::DeserializeSeed::deserialize(
         UiSeed {
-            reg: &registry.map,
+            reg,
             res,
             names: &mut FnvHashMap::default(),
         },
@@ -28,7 +24,7 @@ where
 
 struct UiSeed<'de: 'a, 'a> {
     res: &'a Resources,
-    reg: &'a FnvHashMap<&'static str, DeserializeComponentFn>,
+    reg: &'a Registry,
     names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
 }
 
@@ -71,7 +67,7 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for UiSeed<'de, 'a> {
 
 struct EntitySeed<'de: 'a, 'a> {
     res: &'a Resources,
-    reg: &'a FnvHashMap<&'static str, DeserializeComponentFn>,
+    reg: &'a Registry,
     names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
     entity: Entity,
 }
@@ -97,11 +93,11 @@ impl<'de: 'a, 'a> de::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
                 A: de::MapAccess<'de>,
             {
                 while let Some(key) = map.next_key::<Cow<str>>()? {
-                    if let Some(&de) = self.0.reg.get(key.as_ref()) {
+                    if let Some(de) = self.0.reg.map.get(key.as_ref()) {
                         map.next_value_seed(ComponentSeed {
                             entity: self.0.entity,
                             res: self.0.res,
-                            de,
+                            de: &**de,
                             names: self.0.names,
                         })?;
                     } else {
@@ -120,25 +116,24 @@ pub struct ComponentSeed<'de: 'a, 'a> {
     entity: Entity,
     res: &'a Resources,
     names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
-    de: DeserializeComponentFn,
+    de: &'a Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<(), erased::Error>,
 }
 
 impl<'de: 'a, 'a> de::DeserializeSeed<'de> for ComponentSeed<'de, 'a> {
     type Value = ();
 
-    fn deserialize<D>(mut self, deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: de::Deserializer<'de>,
     {
         let mut deserializer = erased::Deserializer::erase(deserializer);
         (self.de)(
             Seed {
-                names: &mut self.names,
-                ents: &*self.res.fetch(),
-                res: &self.res,
+                entity: self.entity,
+                names: self.names,
+                res: self.res,
             },
             &mut deserializer,
-            self.entity,
         ).map_err(de::Error::custom)
     }
 }
