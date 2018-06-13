@@ -23,9 +23,9 @@ pub struct LayoutSystem {
 }
 
 impl LayoutSystem {
-    pub const NAME: &'static str = "ui::layout";
+    pub const NAME: &'static str = "ui::Layout";
 
-    pub(crate) fn new(world: &mut World) -> Self {
+    pub(crate) fn add(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
         let dims = world.read_resource::<ScreenDimensions>();
         let root = world.read_resource::<Root>();
         let mut poss = world.write_storage::<Position>();
@@ -55,7 +55,8 @@ impl LayoutSystem {
 
         sys.resize(width, dims.width());
         sys.resize(height, dims.height());
-        sys
+
+        dispatcher.add_thread_local(sys);
     }
 
     fn resize(&mut self, var: Variable, val: u32) {

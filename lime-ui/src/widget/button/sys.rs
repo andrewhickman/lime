@@ -12,13 +12,13 @@ pub struct ButtonSystem {
 }
 
 impl ButtonSystem {
-    pub const NAME: &'static str = "ui::button";
+    pub const NAME: &'static str = "ui::Button";
 
-    pub(crate) fn new(world: &mut World) -> Self {
+    pub(crate) fn add(world: &mut World, dispatcher: &mut DispatcherBuilder) {
         let reader = world
             .write_resource::<EventChannel<Event>>()
             .register_reader();
-        ButtonSystem { reader }
+        dispatcher.add(ButtonSystem { reader }, ButtonSystem::NAME, &[]);
     }
 }
 

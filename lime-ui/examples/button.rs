@@ -8,12 +8,10 @@ extern crate winit;
 
 mod common;
 
-use std::sync::Arc;
-
 use cassowary::strength::*;
 use render::Color;
 use specs::prelude::*;
-use ui::draw::Brush;
+use ui::draw::{Brush, Style};
 use ui::event::EventSystem;
 use ui::layout::Position;
 use ui::tree::{Node, Root};
@@ -38,19 +36,22 @@ fn main() {
             .build()
     };
 
-    let btn_style = Arc::new(ButtonStyle {
+    let btn_style = ButtonStyle {
         disabled: Brush::Color(Color::new(0.2, 0.2, 0.2, 1.0)),
         normal: Brush::Color(Color::RED),
         focused: Brush::Color(Color::GREEN),
         pressed: Brush::Color(Color::BLUE),
-    });
+    };
 
-    Node::with_parent(world.create_entity(), root)
+    let style = world.create_entity().with(btn_style).build();
+
+    let rect = Node::with_parent(world.create_entity(), root)
         .with(pos)
         .with(cons)
         .with(Button::new(true))
-        .with(Brush::Style(btn_style))
         .build();
+
+    Style::insert(rect, style, &mut world.write_storage()).unwrap();
 
     let mut quit = false;
     while !quit {

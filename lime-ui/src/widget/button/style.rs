@@ -1,10 +1,13 @@
-use render::d2::Point;
-use render::Color;
+use shrev::ReaderId;
 use specs::prelude::*;
+use specs_mirror::{StorageExt, StorageMutExt};
 
-use draw::{Brush, Style};
-use widget::button::{Button, ButtonState, ToggleButton};
+use draw::{Brush, Style, StyleEvent};
+use widget::button::{Button, ButtonEvent, ButtonState, ButtonSystem, ToggleButton,
+                     ToggleButtonEvent};
 
+#[derive(Component)]
+#[storage(HashMapStorage)]
 pub struct ButtonStyle {
     pub disabled: Brush,
     pub normal: Brush,
@@ -23,17 +26,58 @@ impl ButtonStyle {
     }
 }
 
-impl Style for ButtonStyle {
-    fn draw(&self, ent: Entity, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
-        let btns = ReadStorage::<Button>::fetch(res);
-        if let Some(btn) = btns.get(ent) {
-            self.brush(btn.state()).draw(ent, res, visitor);
-        } else {
-            error!("Button style applied to '{:?}' which is not a button.", ent);
+pub struct ButtonStyleSystem {
+    style_rx: ReaderId<StyleEvent>,
+    btn_rx: ReaderId<ButtonEvent>,
+}
+
+impl ButtonStyleSystem {
+    pub const NAME: &'static str = "ui::ButtonStyle";
+
+    pub(crate) fn add(world: &mut World, dispatcher: &mut DispatcherBuilder) {
+        let style_rx = world.write_storage::<Style>().register_reader();
+        let btn_rx = world.write_storage::<Button>().register_reader();
+        dispatcher.add(
+            ButtonStyleSystem { style_rx, btn_rx },
+            ButtonStyleSystem::NAME,
+            &[ButtonSystem::NAME],
+        );
+    }
+}
+
+impl<'a> System<'a> for ButtonStyleSystem {
+    type SystemData = (
+        ReadStorage<'a, Button>,
+        ReadStorage<'a, Style>,
+        ReadStorage<'a, ButtonStyle>,
+        WriteStorage<'a, Brush>,
+    );
+
+    fn run(&mut self, (btns, styles, btn_styles, mut brushes): Self::SystemData) {
+        for event in btns.read_events(&mut self.btn_rx) {
+            if let Some(style) = styles.get(event.entity) {
+                if let Some(btn_style) = btn_styles.get(style.get()) {
+                    brushes
+                        .insert(event.entity, btn_style.brush(event.new).clone())
+                        .ok();
+                }
+            }
+        }
+
+        for event in styles.read_events(&mut self.style_rx) {
+            if let (Some(btn), Some(btn_style)) =
+                (btns.get(event.entity), btn_styles.get(event.style))
+            {
+                brushes
+                    .insert(event.entity, btn_style.brush(btn.state()).clone())
+                    .ok();
+            }
         }
     }
 }
 
+#[derive(Component)]
+#[storage(HashMapStorage)]
 pub struct ToggleButtonStyle {
     pub disabled_off: Brush,
     pub normal_off: Brush,
@@ -60,14 +104,84 @@ impl ToggleButtonStyle {
     }
 }
 
-impl Style for ToggleButtonStyle {
-    fn draw(&self, ent: Entity, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
-        let btns = ReadStorage::<Button>::fetch(res);
-        let tgls = ReadStorage::<ToggleButton>::fetch(res);
-        if let (Some(btn), Some(tgl)) = (btns.get(ent), tgls.get(ent)) {
-            self.brush((btn.state(), tgl.state())).draw(ent, res, visitor);
-        } else {
-            error!("Toggle button style applied to '{:?}' which is not a toggle button.", ent);
+pub struct ToggleButtonStyleSystem {
+    style_rx: ReaderId<StyleEvent>,
+    btn_rx: ReaderId<ButtonEvent>,
+    tgl_rx: ReaderId<ToggleButtonEvent>,
+}
+
+impl ToggleButtonStyleSystem {
+    pub const NAME: &'static str = "ui::ToggleButtonStyle";
+
+    pub(crate) fn add(world: &mut World, dispatcher: &mut DispatcherBuilder) {
+        let style_rx = world.write_storage::<Style>().register_reader();
+        let btn_rx = world.write_storage::<Button>().register_reader();
+        let tgl_rx = world.write_storage::<ToggleButton>().register_reader();
+        dispatcher.add(
+            ToggleButtonStyleSystem {
+                style_rx,
+                btn_rx,
+                tgl_rx,
+            },
+            ToggleButtonStyleSystem::NAME,
+            &[ButtonSystem::NAME],
+        );
+    }
+}
+
+impl<'a> System<'a> for ToggleButtonStyleSystem {
+    type SystemData = (
+        ReadStorage<'a, Button>,
+        ReadStorage<'a, ToggleButton>,
+        ReadStorage<'a, Style>,
+        ReadStorage<'a, ToggleButtonStyle>,
+        WriteStorage<'a, Brush>,
+    );
+
+    fn run(&mut self, (btns, tgls, styles, tgl_styles, mut brushes): Self::SystemData) {
+        for event in btns.read_events(&mut self.btn_rx) {
+            if let Some(style) = styles.get(event.entity) {
+                if let (Some(tgl), Some(tgl_style)) =
+                    (tgls.get(event.entity), tgl_styles.get(style.get()))
+                {
+                    brushes
+                        .insert(
+                            event.entity,
+                            tgl_style.brush((event.new, tgl.state())).clone(),
+                        )
+                        .ok();
+                }
+            }
+        }
+
+        for event in tgls.read_events(&mut self.tgl_rx) {
+            if let Some(style) = styles.get(event.entity) {
+                if let (Some(btn), Some(tgl_style)) =
+                    (btns.get(event.entity), tgl_styles.get(style.get()))
+                {
+                    brushes
+                        .insert(
+                            event.entity,
+                            tgl_style.brush((btn.state(), event.state)).clone(),
+                        )
+                        .ok();
+                }
+            }
+        }
+
+        for event in styles.read_events(&mut self.style_rx) {
+            if let (Some(btn), Some(tgl), Some(btn_style)) = (
+                btns.get(event.entity),
+                tgls.get(event.entity),
+                tgl_styles.get(event.style),
+            ) {
+                brushes
+                    .insert(
+                        event.entity,
+                        btn_style.brush((btn.state(), tgl.state())).clone(),
+                    )
+                    .ok();
+            }
         }
     }
 }

@@ -5,7 +5,6 @@ use shrev::EventChannel;
 use specs::prelude::*;
 
 use super::*;
-use widget::button::ButtonSystem;
 
 pub fn init_test(dims: ScreenDimensions) -> (World, Dispatcher<'static, 'static>) {
     env_logger::try_init().ok();
@@ -14,12 +13,8 @@ pub fn init_test(dims: ScreenDimensions) -> (World, Dispatcher<'static, 'static>
     let mut world = World::new();
     world.add_resource(dims);
     world.add_resource::<EventChannel<ScreenDimensions>>(Default::default());
-    let (layout_sys, button_sys) = init(&mut world);
+    let mut dispatcher = DispatcherBuilder::new();
+    init(&mut world, &mut dispatcher);
 
-    let dispatcher = DispatcherBuilder::new()
-        .with(button_sys, ButtonSystem::NAME, &[])
-        .with_thread_local(layout_sys)
-        .build();
-
-    (world, dispatcher)
+    (world, dispatcher.build())
 }

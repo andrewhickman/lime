@@ -3,7 +3,7 @@ mod sys;
 #[cfg(test)]
 mod tests;
 
-pub use self::style::{ButtonStyle, ToggleButtonStyle};
+pub use self::style::{ButtonStyle, ButtonStyleSystem, ToggleButtonStyle, ToggleButtonStyleSystem};
 pub use self::sys::ButtonSystem;
 
 use std::sync::Arc;

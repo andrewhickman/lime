@@ -11,7 +11,7 @@ use tree::{Node, Root};
 pub struct EventSystem<'a>(pub &'a winit::Event);
 
 impl<'a> EventSystem<'a> {
-    pub const NAME: &'static str = "ui::event";
+    pub const NAME: &'static str = "ui::Event";
 
     fn keyboard_focus(
         root: ReadExpect<'a, Root>,

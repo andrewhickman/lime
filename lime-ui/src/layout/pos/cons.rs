@@ -24,11 +24,13 @@ impl<'a> ConstraintsBuilder<'a> {
 
     pub fn center(mut self, other: &Position, strength: f64) -> Self {
         self.cons.insert(
-            self.pos.left_var() - other.left_var() | EQ(strength)
+            self.pos.left_var() - other.left_var()
+                | EQ(strength)
                 | other.right_var() - self.pos.right_var(),
         );
         self.cons.insert(
-            self.pos.top_var() - other.top_var() | EQ(strength)
+            self.pos.top_var() - other.top_var()
+                | EQ(strength)
                 | other.bottom_var() - self.pos.bottom_var(),
         );
         self

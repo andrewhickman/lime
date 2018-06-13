@@ -36,16 +36,20 @@ pub mod widget;
 mod tests;
 
 use shrev::EventChannel;
+use specs::DispatcherBuilder;
 use specs::World;
 
-pub fn init(world: &mut World) -> (layout::LayoutSystem, widget::button::ButtonSystem) {
+pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
     world.register::<layout::Constraints>();
     world.register::<layout::Position>();
     world.register::<tree::Node>();
     world.register::<draw::Brush>();
     world.register::<draw::Visibility>();
+    world.register::<draw::Style>();
     world.register::<widget::button::Button>();
+    world.register::<widget::button::ButtonStyle>();
     world.register::<widget::button::ToggleButton>();
+    world.register::<widget::button::ToggleButtonStyle>();
     world.register::<widget::button::RadioButton>();
     world.register::<widget::grid::Grid>();
 
@@ -54,8 +58,9 @@ pub fn init(world: &mut World) -> (layout::LayoutSystem, widget::button::ButtonS
     world.add_resource(event::MouseFocus::new());
     world.add_resource(root);
     world.add_resource(EventChannel::<event::Event>::new());
-    let layout_sys = layout::LayoutSystem::new(world);
-    let button_sys = widget::button::ButtonSystem::new(world);
 
-    (layout_sys, button_sys)
+    layout::LayoutSystem::add(world, dispatcher);
+    widget::button::ButtonSystem::add(world, dispatcher);
+    widget::button::ButtonStyleSystem::add(world, dispatcher);
+    widget::button::ToggleButtonStyleSystem::add(world, dispatcher);
 }

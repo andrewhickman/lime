@@ -395,7 +395,8 @@ fn visibility() {
     let grid = create_grid(&mut world, vec![Size::Auto], vec![Size::Auto]);
 
     let pos = Position::new();
-    let mut cons = pos.constraints_builder()
+    let mut cons = pos
+        .constraints_builder()
         .size((1000.0, 750.0), STRONG)
         .build();
     world

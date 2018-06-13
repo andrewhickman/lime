@@ -11,8 +11,8 @@ mod common;
 use cassowary::strength::*;
 use render::Color;
 use ui::draw::Brush;
-use ui::tree::{Node, Root};
 use ui::layout::Position;
+use ui::tree::{Node, Root};
 use winit::{Event, EventsLoop, WindowEvent};
 
 fn main() {

@@ -92,12 +92,14 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
                 A: serde::MapAccess<'de>,
             {
                 while let Some(key) = map.next_key::<Cow<str>>()? {
-                    map.next_value_seed(Seed {
-                        entity: self.0.entity,
-                        res: self.0.res,
-                        reg: self.0.reg,
-                        names: self.0.names,
-                    }.get_deserialize_fn(key)?)?;
+                    map.next_value_seed(
+                        Seed {
+                            entity: self.0.entity,
+                            res: self.0.res,
+                            reg: self.0.reg,
+                            names: self.0.names,
+                        }.get_deserialize_fn(key)?,
+                    )?;
                 }
                 Ok(())
             }
