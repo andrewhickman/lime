@@ -19,9 +19,6 @@ use ui::widget::button::{Button, ButtonStyle};
 use winit::{Event, EventsLoop, WindowEvent};
 
 fn main() {
-    env_logger::init();
-    std::panic::set_hook(Box::new(utils::panic_hook));
-
     let mut events_loop = EventsLoop::new();
     let (mut world, mut dispatcher) = common::init(&events_loop);
 

@@ -77,15 +77,11 @@ fn de() {
     "#;
 
     let mut world = World::new();
-    let mut registry = de::Registry::new();
+    let registry = de::Registry::new();
     world.register::<Brush>();
-    registry.register::<Brush>("Brush");
     world.register::<Style>();
-    registry.register_with_deserialize_and_insert::<Style>("Style");
     world.register::<ButtonStyle>();
-    registry.register::<ButtonStyle>("ButtonStyle");
     world.register::<ToggleButtonStyle>();
-    registry.register::<ToggleButtonStyle>("ToggleButtonStyle");
 
     de::deserialize(
         &mut json::Deserializer::from_str(DATA),

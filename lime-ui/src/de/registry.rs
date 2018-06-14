@@ -53,9 +53,26 @@ where
 
 impl Registry {
     pub fn new() -> Self {
-        Registry {
-            map: FnvHashMap::default(),
-        }
+        use *;
+
+        let mut reg = Registry {
+            map: FnvHashMap::with_capacity_and_hasher(4, Default::default()),
+        };
+
+        //        world.register::<layout::Constraints>();
+        //        world.register::<layout::Position>();
+        //        world.register::<tree::Node>();
+        reg.register::<draw::Brush>("Brush");
+        reg.register_with_deserialize_and_insert::<draw::Style>("Style");
+        //        world.register::<draw::Visibility>();
+        //        world.register::<widget::button::Button>();
+        reg.register::<widget::button::ButtonStyle>("ButtonStyle");
+        //        world.register::<widget::button::ToggleButton>();
+        reg.register::<widget::button::ToggleButtonStyle>("ToggleButtonStyle");
+        //        world.register::<widget::button::RadioButton>();
+        //        world.register::<widget::grid::Grid>();
+
+        reg
     }
 
     pub fn register<C>(&mut self, key: &'static str)

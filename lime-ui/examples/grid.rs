@@ -21,8 +21,7 @@ use winit::{Event, EventsLoop, WindowEvent};
 
 fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Color) -> Entity {
     let pos = Position::new();
-    let mut cons = pos
-        .constraints_builder()
+    let mut cons = pos.constraints_builder()
         .min_size((100.0, 100.0), STRONG)
         .build();
     world
@@ -39,9 +38,6 @@ fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Col
 }
 
 fn main() {
-    env_logger::init();
-    std::panic::set_hook(Box::new(utils::panic_hook));
-
     let mut events_loop = EventsLoop::new();
     let (mut world, mut dispatcher) = common::init(&events_loop);
 
