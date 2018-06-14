@@ -44,8 +44,8 @@ impl<'de, 'a> serde::DeserializeSeed<'de> for BrushSeed<'de, 'a> {
                     let brush = Brush::Color(serde::VariantAccess::newtype_variant::<Color>(var)?);
                     self.0.insert(brush)
                 } else {
-                    let de = self.0.get_deserialize_fn(key)?;
-                    serde::VariantAccess::newtype_variant_seed(var, de)
+                    let seed = self.0.component_seed(key)?;
+                    serde::VariantAccess::newtype_variant_seed(var, seed)
                 }
             }
         }

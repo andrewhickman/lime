@@ -1,5 +1,7 @@
+use std::borrow::Cow;
 use std::io::Cursor;
 
+use erased_serde as erased;
 use serde::de;
 use serde_json::Deserializer;
 use specs::prelude::*;

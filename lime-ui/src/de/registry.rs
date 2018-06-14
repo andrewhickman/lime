@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::borrow::Cow;
 
 use erased_serde as erased;
@@ -8,15 +9,16 @@ use specs::storage::InsertResult;
 
 use de::Seed;
 
+struct Entry {
+    ty: TypeId,
+    de: Box<
+        for<'de, 'a> Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<(), erased::Error>,
+    >,
+}
+
 #[derive(Default)]
 pub struct Registry {
-    map: FnvHashMap<
-        &'static str,
-        Box<
-            for<'de, 'a> Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>)
-                -> Result<(), erased::Error>,
-        >,
-    >,
+    map: FnvHashMap<&'static str, Entry>,
 }
 
 pub trait Insert: Sized + 'static {
@@ -60,7 +62,7 @@ impl Registry {
     where
         C: serde::DeserializeOwned + Component,
     {
-        self.register_impl(
+        self.register_impl::<C, _>(
             key,
             deserialize_and_insert::<C, _, _>(default_deserialize, default_insert),
         )
@@ -70,43 +72,62 @@ impl Registry {
     where
         C: Deserialize + Component,
     {
-        self.register_impl(key, deserialize_and_insert(C::deserialize, default_insert))
+        self.register_impl::<C, _>(key, deserialize_and_insert(C::deserialize, default_insert))
     }
 
     pub fn register_with_insert<C>(&mut self, key: &'static str)
     where
         C: serde::DeserializeOwned + Insert,
     {
-        self.register_impl(key, deserialize_and_insert(default_deserialize, C::insert))
+        self.register_impl::<C, _>(key, deserialize_and_insert(default_deserialize, C::insert))
     }
 
     pub fn register_with_deserialize_and_insert<C>(&mut self, key: &'static str)
     where
         C: DeserializeAndInsert,
     {
-        self.register_impl(key, C::deserialize_and_insert)
+        self.register_impl::<C, _>(key, C::deserialize_and_insert)
     }
 
-    fn register_impl<F>(&mut self, key: &'static str, f: F)
+    fn register_impl<C, F>(&mut self, key: &'static str, f: F)
     where
+        C: 'static,
         F: for<'de, 'a> Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>)
                 -> Result<(), erased::Error>
             + 'static,
     {
-        if self.map.insert(key, Box::new(f)).is_some() {
+        let entry = Entry {
+            de: Box::new(f),
+            ty: TypeId::of::<C>(),
+        };
+        if self.map.insert(key, entry).is_some() {
             panic!("component '{}' already added", key);
         }
     }
 
-    pub(in de) fn get<'de, 'a, E>(
+    pub fn get_de<'de, 'a, E>(
         &'a self,
         key: Cow<'de, str>,
     ) -> Result<&'a Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<(), erased::Error>, E>
     where
         E: serde::Error,
     {
-        if let Some(de) = self.map.get(key.as_ref()) {
-            Ok(&**de)
+        if let Some(entry) = self.map.get(key.as_ref()) {
+            Ok(&*entry.de)
+        } else {
+            Err(serde::Error::custom(format!(
+                "key '{}' not in registry",
+                key
+            )))
+        }
+    }
+
+    pub fn get_type_id<E>(&self, key: Cow<str>) -> Result<TypeId, E>
+    where
+        E: serde::Error,
+    {
+        if let Some(entry) = self.map.get(key.as_ref()) {
+            Ok(entry.ty)
         } else {
             Err(serde::Error::custom(format!(
                 "key '{}' not in registry",
@@ -127,15 +148,7 @@ where
     I: Fn(C, Entity, &Resources) -> InsertResult<C> + 'static,
 {
     move |mut seed, deserializer| {
-        let comp = deserialize(
-            Seed {
-                names: seed.names,
-                res: seed.res,
-                reg: seed.reg,
-                entity: seed.entity,
-            },
-            deserializer,
-        )?;
+        let comp = deserialize(seed.borrow(), deserializer)?;
         seed.insert_with(comp, &insert)
     }
 }
