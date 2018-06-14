@@ -51,7 +51,7 @@ fn main() {
         .with(Button::new(true))
         .build();
 
-    Style::insert(rect, style, &mut world.write_storage()).unwrap();
+    Style::insert::<ButtonStyle>(rect, style, &mut world.write_storage()).unwrap();
 
     let mut quit = false;
     while !quit {

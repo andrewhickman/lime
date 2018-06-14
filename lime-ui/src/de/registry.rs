@@ -122,7 +122,7 @@ impl Registry {
         }
     }
 
-    pub fn get_type_id<E>(&self, key: Cow<str>) -> Result<TypeId, E>
+    pub fn get_ty<E>(&self, key: Cow<str>) -> Result<TypeId, E>
     where
         E: serde::Error,
     {

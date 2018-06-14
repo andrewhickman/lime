@@ -34,6 +34,13 @@ impl Color {
     };
 }
 
+impl PartialEq for Color {
+    fn eq(&self, other: &Self) -> bool {
+        ulps_eq!(self.r, other.r) && ulps_eq!(self.g, other.g) && ulps_eq!(self.b, other.b)
+            && ulps_eq!(self.a, other.a)
+    }
+}
+
 unsafe impl VertexMember for Color {
     fn format() -> (VertexMemberTy, usize) {
         (VertexMemberTy::F32, 4)

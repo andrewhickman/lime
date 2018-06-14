@@ -6,7 +6,7 @@ use draw::{Brush, Style, StyleEvent};
 use widget::button::{Button, ButtonEvent, ButtonState, ButtonSystem, ToggleButton,
                      ToggleButtonEvent};
 
-#[derive(Component)]
+#[derive(Component, Deserialize)]
 #[storage(HashMapStorage)]
 pub struct ButtonStyle {
     pub disabled: Brush,
@@ -56,27 +56,31 @@ impl<'a> System<'a> for ButtonStyleSystem {
     fn run(&mut self, (btns, styles, btn_styles, mut brushes): Self::SystemData) {
         for event in btns.read_events(&mut self.btn_rx) {
             if let Some(style) = styles.get(event.entity) {
-                if let Some(btn_style) = btn_styles.get(style.get()) {
-                    brushes
-                        .insert(event.entity, btn_style.brush(event.new).clone())
-                        .ok();
+                if style.is::<ButtonStyle>() {
+                    if let Some(btn_style) = btn_styles.get(style.get()) {
+                        brushes
+                            .insert(event.entity, btn_style.brush(event.new).clone())
+                            .ok();
+                    }
                 }
             }
         }
 
         for event in styles.read_events(&mut self.style_rx) {
-            if let (Some(btn), Some(btn_style)) =
-                (btns.get(event.entity), btn_styles.get(event.style))
-            {
-                brushes
-                    .insert(event.entity, btn_style.brush(btn.state()).clone())
-                    .ok();
+            if event.style.is::<ButtonStyle>() {
+                if let (Some(btn), Some(btn_style)) =
+                    (btns.get(event.entity), btn_styles.get(event.style.get()))
+                {
+                    brushes
+                        .insert(event.entity, btn_style.brush(btn.state()).clone())
+                        .ok();
+                }
             }
         }
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Deserialize)]
 #[storage(HashMapStorage)]
 pub struct ToggleButtonStyle {
     pub disabled_off: Brush,
@@ -170,17 +174,19 @@ impl<'a> System<'a> for ToggleButtonStyleSystem {
         }
 
         for event in styles.read_events(&mut self.style_rx) {
-            if let (Some(btn), Some(tgl), Some(btn_style)) = (
-                btns.get(event.entity),
-                tgls.get(event.entity),
-                tgl_styles.get(event.style),
-            ) {
-                brushes
-                    .insert(
-                        event.entity,
-                        btn_style.brush((btn.state(), tgl.state())).clone(),
-                    )
-                    .ok();
+            if event.style.is::<ButtonStyle>() {
+                if let (Some(btn), Some(tgl), Some(btn_style)) = (
+                    btns.get(event.entity),
+                    tgls.get(event.entity),
+                    tgl_styles.get(event.style.get()),
+                ) {
+                    brushes
+                        .insert(
+                            event.entity,
+                            btn_style.brush((btn.state(), tgl.state())).clone(),
+                        )
+                        .ok();
+                }
             }
         }
     }

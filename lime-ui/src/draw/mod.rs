@@ -1,4 +1,3 @@
-mod de;
 mod style;
 mod visibility;
 
@@ -12,9 +11,17 @@ use specs::prelude::*;
 use layout::Position;
 use tree::{self, Node, Root};
 
-#[derive(Clone, Component)]
+#[derive(Clone, Component, Debug, Deserialize)]
 pub enum Brush {
     Color(Color),
+}
+
+impl PartialEq for Brush {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Brush::Color(lhs), Brush::Color(rhs)) => lhs == rhs,
+        }
+    }
 }
 
 pub struct DrawUi;

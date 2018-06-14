@@ -4,6 +4,8 @@ extern crate fnv;
 extern crate hibitset;
 extern crate lime_render as render;
 extern crate lime_utils as utils;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde;
 extern crate shrev;
 extern crate specs;
@@ -19,9 +21,6 @@ extern crate winit;
 extern crate approx;
 #[cfg(test)]
 extern crate env_logger;
-#[cfg(test)]
-#[macro_use]
-extern crate serde_derive;
 #[cfg(test)]
 extern crate serde_json;
 
