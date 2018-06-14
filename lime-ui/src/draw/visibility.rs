@@ -1,8 +1,13 @@
 use std::mem;
 
+use erased_serde as erased;
+use serde::de as serde;
 use shrev::EventChannel;
 use specs::prelude::*;
-use specs_mirror::{Mirrored, MirroredStorage};
+use specs::storage::InsertResult;
+use specs_mirror::{Mirrored, MirroredStorage, StorageMutExt};
+
+use de::{DeserializeAndInsert, Seed};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Visibility {
@@ -22,6 +27,22 @@ impl Visibility {
         Visibility {
             state: VisibilityState::Visible,
         }
+    }
+
+    pub fn insert(
+        entity: Entity,
+        state: VisibilityState,
+        storage: &mut WriteStorage<Self>,
+    ) -> InsertResult<Self> {
+        let res = storage.insert(entity, Visibility { state });
+        if res.is_ok() && state != VisibilityState::Visible {
+            storage.event_channel().single_write(VisibilityEvent {
+                entity,
+                old: VisibilityState::Visible,
+                new: state,
+            });
+        }
+        res
     }
 
     pub(crate) fn needs_draw(&self) -> bool {
@@ -45,7 +66,8 @@ impl Visibility {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize)]
+#[serde(rename = "Visibility")]
 pub enum VisibilityState {
     Visible,
     Hidden,
@@ -65,6 +87,24 @@ impl VisibilityEvent {
             (VisibilityState::Collapsed, _) => Some(true),
             (_, VisibilityState::Collapsed) => Some(false),
             (_, _) => None,
+        }
+    }
+}
+
+impl DeserializeAndInsert for Visibility {
+    fn deserialize_and_insert<'de, 'a>(
+        seed: Seed<'de, 'a>,
+        deserializer: &mut erased::Deserializer<'de>,
+    ) -> Result<(), erased::Error> {
+        let state = <VisibilityState as serde::Deserialize>::deserialize(deserializer)?;
+        let res = Visibility::insert(seed.entity, state, &mut WriteStorage::fetch(seed.res));
+        if res.unwrap().is_some() {
+            Err(serde::Error::custom(format!(
+                "visibility defined twice for entity '{}'",
+                seed.get_name(seed.entity)
+            )))
+        } else {
+            Ok(())
         }
     }
 }

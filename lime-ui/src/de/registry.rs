@@ -64,10 +64,10 @@ impl Registry {
         //        world.register::<tree::Node>();
         reg.register::<draw::Brush>("Brush");
         reg.register_with_deserialize_and_insert::<draw::Style>("Style");
-        //        world.register::<draw::Visibility>();
-        //        world.register::<widget::button::Button>();
+        reg.register_with_deserialize_and_insert::<draw::Visibility>("Visibility");
+        reg.register::<widget::button::Button>("Button");
         reg.register::<widget::button::ButtonStyle>("ButtonStyle");
-        //        world.register::<widget::button::ToggleButton>();
+        reg.register::<widget::button::ToggleButton>("ToggleButton");
         reg.register::<widget::button::ToggleButtonStyle>("ToggleButtonStyle");
         //        world.register::<widget::button::RadioButton>();
         //        world.register::<widget::grid::Grid>();

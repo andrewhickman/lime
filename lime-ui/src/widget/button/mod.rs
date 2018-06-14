@@ -1,3 +1,4 @@
+mod de;
 mod style;
 mod sys;
 #[cfg(test)]
@@ -12,12 +13,12 @@ use specs::error::Error;
 use specs::prelude::*;
 use specs_mirror::{Mirrored, MirroredStorage};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Button {
     state: ButtonState,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ToggleButton {
     state: bool,
 }
@@ -27,7 +28,7 @@ pub struct RadioButton {
     group: Arc<[Entity]>,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize)]
 pub enum ButtonState {
     Normal,
     Focused,
