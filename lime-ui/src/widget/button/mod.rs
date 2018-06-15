@@ -1,4 +1,3 @@
-mod de;
 mod style;
 mod sys;
 #[cfg(test)]

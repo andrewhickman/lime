@@ -34,7 +34,7 @@ fn main() {
     };
 
     let btn_style = ButtonStyle {
-        disabled: Brush::Color(Color::new(0.2, 0.2, 0.2, 1.0)),
+        disabled: Brush::Color(Color::rgb(0.2, 0.2, 0.2)),
         normal: Brush::Color(Color::RED),
         focused: Brush::Color(Color::GREEN),
         pressed: Brush::Color(Color::BLUE),

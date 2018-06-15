@@ -9,58 +9,29 @@ use widget::button::{ButtonStyle, ToggleButtonStyle};
 
 #[test]
 fn de() {
-    const DATA: &'static str = r#"
+    const DATA: &'static str = r##"
     {
         "style1": {
             "ButtonStyle": {
-                "disabled": { "Color": {
-                    "r": 0.2, "g": 0.2, "b": 0.2, "a": 1.0
-                } },
-                "normal": { "Color": {
-                    "r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0
-                } },
-                "focused": { "Color": {
-                    "r": 0.0, "g": 1.0, "b": 0.0, "a": 1.0
-                } },
-                "pressed": { "Color": {
-                    "r": 0.0, "g": 0.0, "b": 1.0, "a": 1.0
-                } }
+                "disabled": { "Color": "#808080" },
+                "normal": { "Color": "#FF0000" },
+                "focused": { "Color": "#00FF00" },
+                "pressed": { "Color": "#0000FF" }
             },
             "ToggleButtonStyle": {
-                "disabled_on": { "Color": {
-                    "r": 0.2, "g": 0.2, "b": 0.2, "a": 1.0
-                } },
-                "normal_on": { "Color": {
-                    "r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0
-                } },
-                "focused_on": { "Color": {
-                    "r": 0.0, "g": 1.0, "b": 0.0, "a": 1.0
-                } },
-                "pressed_on": { "Color": {
-                    "r": 0.0, "g": 0.0, "b": 1.0, "a": 1.0
-                } },
-                "disabled_off": { "Color": {
-                    "r": 0.2, "g": 0.2, "b": 0.2, "a": 1.0
-                } },
-                "normal_off": { "Color": {
-                    "r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0
-                } },
-                "focused_off": { "Color": {
-                    "r": 0.0, "g": 1.0, "b": 0.0, "a": 1.0
-                } },
-                "pressed_off": { "Color": {
-                    "r": 0.0, "g": 0.0, "b": 1.0, "a": 1.0
-                } }
+                "disabled_on": { "Color": "#808080" },
+                "normal_on": { "Color": "#FF0000" },
+                "focused_on": { "Color": "#00FF00" },
+                "pressed_on": { "Color": "#0000FF" },
+                "disabled_off": { "Color": "#808080" },
+                "normal_off": { "Color": "#FF0000" },
+                "focused_off": { "Color": "#00FF00" },
+                "pressed_off": { "Color": "#0000FF" }
             }
         },
         "ent1": {
             "Brush": {
-                "Color": {
-                    "r": 1.0,
-                    "g": 0.0,
-                    "b": 0.0,
-                    "a": 1.0
-                }
+                "Color": "#FF0000"
             },
             "Style": {
                 "style": "style1",
@@ -74,7 +45,7 @@ fn de() {
             }
         }
     }
-    "#;
+    "##;
 
     let mut world = World::new();
     let registry = de::Registry::new();
