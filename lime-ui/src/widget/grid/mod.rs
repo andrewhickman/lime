@@ -76,7 +76,7 @@ fn layout(
         match size {
             Size::Abs(size) => {
                 cons.insert(var - prev | EQ(STRONG) | size);
-                size_sum = size_sum + var - prev;
+                size_sum += var - prev;
             }
             Size::Rel(ratio) => {
                 assert!(ratio > 0.0);
@@ -84,7 +84,7 @@ fn layout(
                 ratio_sum += ratio;
             }
             Size::Auto => {
-                size_sum = size_sum + var - prev;
+                size_sum += var - prev;
             }
         }
 

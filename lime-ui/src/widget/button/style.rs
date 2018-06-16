@@ -3,8 +3,9 @@ use specs::prelude::*;
 use specs_mirror::{StorageExt, StorageMutExt};
 
 use draw::{Brush, Style, StyleEvent};
-use widget::button::{Button, ButtonEvent, ButtonState, ButtonSystem, ToggleButton,
-                     ToggleButtonEvent};
+use widget::button::{
+    Button, ButtonEvent, ButtonState, ButtonSystem, ToggleButton, ToggleButtonEvent,
+};
 
 #[derive(Component, Deserialize)]
 #[storage(HashMapStorage)]

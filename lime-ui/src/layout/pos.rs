@@ -1,17 +1,21 @@
-mod cons;
-
-pub use self::cons::ConstraintsBuilder;
-
 use cassowary::{Expression, Variable};
 use fnv::FnvHashMap;
 use render::d2::Point;
 use specs::prelude::*;
 
-#[derive(Component, Debug)]
+use layout::ConstraintsBuilder;
+
+#[derive(Clone, Component, Debug)]
 pub struct Position {
     // Order: left, top, right, bottom
     vars: [Variable; 4],
     vals: [f32; 4],
+}
+
+impl Default for Position {
+    fn default() -> Self {
+        Position::new()
+    }
 }
 
 impl Position {

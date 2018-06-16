@@ -113,7 +113,7 @@ fn name() {
             struct Comp2De<'a>(#[serde(borrow)] Cow<'a, str>);
 
             let Comp2De(name) = <Comp2De as de::Deserialize>::deserialize(deserializer)?;
-            let entity = seed.get_entity(name);
+            let entity = seed.get_entity(name)?;
             Ok(Comp2(entity))
         }
     }

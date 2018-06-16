@@ -7,7 +7,7 @@ use serde::de as serde;
 use specs::prelude::*;
 use specs::storage::InsertResult;
 
-use de::Seed;
+use de::{DeserializeError, Seed};
 
 struct Entry {
     ty: TypeId,
@@ -122,34 +122,25 @@ impl Registry {
         }
     }
 
-    pub fn get_de<'de, 'a, E>(
+    pub fn get_de<'de, 'a>(
         &'a self,
         key: Cow<'de, str>,
-    ) -> Result<&'a Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<(), erased::Error>, E>
-    where
-        E: serde::Error,
-    {
+    ) -> Result<
+        &'a Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<(), erased::Error>,
+        DeserializeError,
+    > {
         if let Some(entry) = self.map.get(key.as_ref()) {
             Ok(&*entry.de)
         } else {
-            Err(serde::Error::custom(format!(
-                "key '{}' not in registry",
-                key
-            )))
+            Err(DeserializeError(format!("key '{}' not in registry", key)))
         }
     }
 
-    pub fn get_ty<E>(&self, key: Cow<str>) -> Result<TypeId, E>
-    where
-        E: serde::Error,
-    {
+    pub fn get_ty(&self, key: Cow<str>) -> Result<TypeId, DeserializeError> {
         if let Some(entry) = self.map.get(key.as_ref()) {
             Ok(entry.ty)
         } else {
-            Err(serde::Error::custom(format!(
-                "key '{}' not in registry",
-                key
-            )))
+            Err(DeserializeError(format!("key '{}' not in registry", key)))
         }
     }
 }
@@ -166,7 +157,8 @@ where
 {
     move |mut seed, deserializer| {
         let comp = deserialize(seed.borrow(), deserializer)?;
-        seed.insert_with(comp, &insert)
+        seed.insert_with(comp, &insert)?;
+        Ok(())
     }
 }
 

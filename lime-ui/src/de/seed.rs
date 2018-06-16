@@ -8,7 +8,7 @@ use specs::prelude::*;
 use specs::storage::InsertResult;
 use specs::world::EntitiesRes;
 
-use de::{registry, Registry};
+use de::{is_valid_name, registry, DeserializeError, Registry};
 
 pub struct Seed<'de: 'a, 'a> {
     names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
@@ -18,8 +18,12 @@ pub struct Seed<'de: 'a, 'a> {
 }
 
 impl<'de, 'a> Seed<'de, 'a> {
-    pub fn get_entity(&mut self, name: Cow<'de, str>) -> Entity {
-        get_entity(name, &mut self.names, &*self.res.fetch())
+    pub fn get_entity(&mut self, name: Cow<'de, str>) -> Result<Entity, DeserializeError> {
+        if is_valid_name(name.as_ref()) {
+            Ok(get_entity(name, &mut self.names, &*self.res.fetch()))
+        } else {
+            Err(DeserializeError(format!("invalid name '{}'", name)))
+        }
     }
 
     /// Reverse lookup of name given entity for error messages. Panics if entity was not created
@@ -50,29 +54,27 @@ impl<'de, 'a> Seed<'de, 'a> {
         }
     }
 
-    pub fn component_seed<E>(self, key: Cow<'de, str>) -> Result<ComponentSeed<'de, 'a>, E>
-    where
-        E: serde::Error,
-    {
+    pub fn component_seed(
+        self,
+        key: Cow<'de, str>,
+    ) -> Result<ComponentSeed<'de, 'a>, DeserializeError> {
         let de = self.reg.get_de(key)?;
         Ok(ComponentSeed { seed: self, de })
     }
 
-    pub fn insert<C, E>(&mut self, comp: C) -> Result<(), E>
+    pub fn insert<C>(&mut self, comp: C) -> Result<(), DeserializeError>
     where
         C: Component,
-        E: serde::Error,
     {
         self.insert_with(comp, registry::default_insert)
     }
 
-    pub fn insert_with<C, I, E>(&mut self, comp: C, insert: I) -> Result<(), E>
+    pub fn insert_with<C, I>(&mut self, comp: C, insert: I) -> Result<(), DeserializeError>
     where
         I: Fn(C, Entity, &Resources) -> InsertResult<C>,
-        E: serde::Error,
     {
         if insert(comp, self.entity, self.res).unwrap().is_some() {
-            Err(serde::Error::custom(format!(
+            Err(DeserializeError(format!(
                 "component defined twice for entity '{}'",
                 self.get_name(self.entity)
             )))
@@ -162,7 +164,11 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
                 A: serde::MapAccess<'de>,
             {
                 while let Some(key) = map.next_key::<Cow<str>>()? {
-                    map.next_value_seed(self.0.seed.borrow().component_seed(key)?)?;
+                    map.next_value_seed(self.0
+                        .seed
+                        .borrow()
+                        .component_seed(key)
+                        .map_err(serde::Error::custom)?)?;
                 }
                 Ok(())
             }

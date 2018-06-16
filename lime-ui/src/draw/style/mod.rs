@@ -91,7 +91,7 @@ impl DeserializeAndInsert for Style {
         }
 
         let StyleDe { style, ty } = serde::Deserialize::deserialize(deserializer)?;
-        let style = seed.get_entity(style);
+        let style = seed.get_entity(style)?;
         let ty = seed.reg.get_ty(ty)?;
 
         let res = Style::insert_with_ty(seed.entity, style, ty, &mut WriteStorage::fetch(seed.res));

@@ -10,7 +10,7 @@ pub struct ConstraintsBuilder<'a> {
 }
 
 impl<'a> ConstraintsBuilder<'a> {
-    pub(super) fn new(pos: &'a Position) -> Self {
+    pub(in layout) fn new(pos: &'a Position) -> Self {
         let mut cons = FnvHashSet::with_capacity_and_hasher(2, Default::default());
         cons.insert(pos.width_var() | GE(strength::REQUIRED) | 0.0);
         cons.insert(pos.width_var() | GE(strength::REQUIRED) | 0.0);

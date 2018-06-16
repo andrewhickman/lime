@@ -4,8 +4,9 @@ use specs_mirror::StorageMutExt;
 use winit::MouseButton;
 
 use event::{Event, EventKind, MouseEvent};
-use widget::button::{Button, ButtonEvent, ButtonState, RadioButton, ToggleButton,
-                     ToggleButtonEvent};
+use widget::button::{
+    Button, ButtonEvent, ButtonState, RadioButton, ToggleButton, ToggleButtonEvent,
+};
 
 pub struct ButtonSystem {
     reader: ReaderId<Event>,

@@ -24,6 +24,12 @@ impl Component for Constraints {
     type Storage = ConstraintsStorage;
 }
 
+impl Default for Constraints {
+    fn default() -> Self {
+        Constraints::new(FnvHashSet::default())
+    }
+}
+
 impl Constraints {
     pub fn new(cons: FnvHashSet<Constraint>) -> Self {
         let updates = cons.iter().cloned().map(ConstraintUpdate::Add).collect();
@@ -43,6 +49,13 @@ impl Constraints {
     pub fn remove(&mut self, con: Constraint) {
         if self.cons.remove(&con) && self.active {
             self.updates.push(ConstraintUpdate::Remove(con));
+        }
+    }
+
+    pub fn reserve(&mut self, cap: usize) {
+        self.cons.reserve(cap);
+        if self.active {
+            self.updates.reserve(cap);
         }
     }
 
@@ -72,5 +85,16 @@ impl FromIterator<Constraint> for Constraints {
         I: IntoIterator<Item = Constraint>,
     {
         Constraints::new(FnvHashSet::from_iter(iter))
+    }
+}
+
+impl Extend<Constraint> for Constraints {
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Constraint>,
+    {
+        for con in iter {
+            self.add(con)
+        }
     }
 }
