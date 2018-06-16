@@ -26,16 +26,13 @@ struct ConstraintsSeed<'de: 'a, 'a>(Seed<'de, 'a>);
 impl<'de, 'a> serde::DeserializeSeed<'de> for ConstraintsSeed<'de, 'a> {
     type Value = ();
 
-    fn deserialize<D>(mut self, deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        struct ConstraintsVisitor<'de: 'a, 'a> {
-            seed: Seed<'de, 'a>,
-            cons: &'a mut Constraints,
-        }
+        struct Visitor<'de: 'a, 'a>(Seed<'de, 'a>);
 
-        impl<'de, 'a> serde::Visitor<'de> for ConstraintsVisitor<'de, 'a> {
+        impl<'de, 'a> serde::Visitor<'de> for Visitor<'de, 'a> {
             type Value = ();
 
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -46,24 +43,24 @@ impl<'de, 'a> serde::DeserializeSeed<'de> for ConstraintsSeed<'de, 'a> {
             where
                 A: serde::SeqAccess<'de>,
             {
+                let mut cons = WriteStorage::<Constraints>::fetch(self.0.res);
+                let cons = cons.entry(self.0.entity)
+                    .unwrap()
+                    .or_insert_with(Default::default);
+
                 if let Some(size) = seq.size_hint() {
-                    self.cons.reserve(size);
+                    cons.reserve(size);
                 }
 
-                while let Some(con) = seq.next_element_seed(ConstraintSeed(self.seed.borrow()))? {
-                    self.cons.add(con);
+                while let Some(con) = seq.next_element_seed(ConstraintSeed(self.0.borrow()))? {
+                    cons.add(con);
                 }
 
                 Ok(())
             }
         }
 
-        let mut cons = WriteStorage::<Constraints>::fetch(self.0.res);
-        let entity = self.0.entity;
-        deserializer.deserialize_seq(ConstraintsVisitor {
-            seed: self.0.borrow(),
-            cons: cons.entry(entity).unwrap().or_insert_with(Default::default),
-        })
+        deserializer.deserialize_seq(Visitor(self.0))
     }
 }
 

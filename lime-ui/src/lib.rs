@@ -38,7 +38,7 @@ use shrev::EventChannel;
 use specs::DispatcherBuilder;
 use specs::World;
 
-pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
+fn init_world(world: &mut World) {
     world.register::<layout::Constraints>();
     world.register::<layout::Position>();
     world.register::<tree::Node>();
@@ -51,15 +51,22 @@ pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
     world.register::<widget::button::ToggleButtonStyle>();
     world.register::<widget::button::RadioButton>();
     world.register::<widget::grid::Grid>();
+}
 
-    let root = tree::Root::new(world);
+fn init_dispatcher(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
+    let root = world.read_resource::<tree::Root>().clone();
     world.add_resource(event::KeyboardFocus::new(&root));
     world.add_resource(event::MouseFocus::new());
-    world.add_resource(root);
     world.add_resource(EventChannel::<event::Event>::new());
 
     layout::LayoutSystem::add(world, dispatcher);
     widget::button::ButtonSystem::add(world, dispatcher);
     widget::button::ButtonStyleSystem::add(world, dispatcher);
     widget::button::ToggleButtonStyleSystem::add(world, dispatcher);
+}
+
+pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
+    init_world(world);
+    tree::Root::create(world);
+    init_dispatcher(world, dispatcher);
 }

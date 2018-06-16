@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::borrow::Cow;
 use std::fmt;
 use std::str::SplitWhitespace;

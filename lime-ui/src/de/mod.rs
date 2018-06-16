@@ -9,25 +9,46 @@ pub use self::seed::{ComponentSeed, EntitySeed, Seed};
 use std::error::Error;
 use std::fmt;
 
-use de::seed::UiSeed;
-
 use erased_serde as erased;
 use fnv::FnvHashMap;
 use serde::de as serde;
 use specs::prelude::*;
 
-pub fn deserialize<'de, D>(deserializer: D, reg: &Registry, res: &Resources) -> Result<(), D::Error>
+use de::seed::UiSeed;
+use tree::Root;
+use {init_dispatcher, init_world};
+
+pub fn deserialize<'de, D>(
+    deserializer: D,
+    reg: &Registry,
+    res: &mut Resources,
+) -> Result<(), D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    serde::DeserializeSeed::deserialize(
-        UiSeed::new(reg, res, &mut FnvHashMap::default()),
-        deserializer,
-    )
+    let mut names = FnvHashMap::default();
+    serde::DeserializeSeed::deserialize(UiSeed::new(reg, res, &mut names), deserializer)?;
+    if let Some(&entity) = names.get("root") {
+        res.insert(Root::new(entity));
+        Ok(())
+    } else {
+        Err(serde::Error::custom("no root entity defined"))
+    }
 }
 
-pub fn is_valid_name(s: &str) -> bool {
-    s.chars().all(|c| c == '_' || c.is_ascii_alphanumeric())
+pub fn init<'de, D>(
+    world: &mut World,
+    dispatcher: &mut DispatcherBuilder<'_, '_>,
+    deserializer: D,
+    reg: &Registry,
+) -> Result<(), D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    init_world(world);
+    deserialize(deserializer, reg, &mut world.res)?;
+    init_dispatcher(world, dispatcher);
+    Ok(())
 }
 
 #[derive(Debug)]

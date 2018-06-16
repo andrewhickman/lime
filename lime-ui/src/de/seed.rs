@@ -8,7 +8,7 @@ use specs::prelude::*;
 use specs::storage::InsertResult;
 use specs::world::EntitiesRes;
 
-use de::{is_valid_name, registry, DeserializeError, Registry};
+use de::{registry, DeserializeError, Registry};
 
 pub struct Seed<'de: 'a, 'a> {
     names: &'a mut FnvHashMap<Cow<'de, str>, Entity>,
@@ -45,21 +45,21 @@ impl<'de, 'a> Seed<'de, 'a> {
         }
     }
 
-    pub fn with_entity<'b>(&'b mut self, entity: Entity) -> Seed<'de, 'b> {
-        Seed {
-            names: self.names,
-            res: self.res,
-            reg: self.reg,
-            entity,
-        }
-    }
-
     pub fn component_seed(
         self,
         key: Cow<'de, str>,
     ) -> Result<ComponentSeed<'de, 'a>, DeserializeError> {
         let de = self.reg.get_de(key)?;
         Ok(ComponentSeed { seed: self, de })
+    }
+
+    pub fn entity_seed(self, entity: Entity) -> EntitySeed<'de, 'a> {
+        EntitySeed(Seed {
+            names: self.names,
+            res: self.res,
+            reg: self.reg,
+            entity,
+        })
     }
 
     pub fn insert<C>(&mut self, comp: C) -> Result<(), DeserializeError>
@@ -122,14 +122,12 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for UiSeed<'de, 'a> {
             {
                 while let Some(name) = map.next_key::<Cow<str>>()? {
                     let entity = get_entity(name, &mut self.0.names, &*self.0.res.fetch());
-                    map.next_value_seed(EntitySeed {
-                        seed: Seed {
-                            res: self.0.res,
-                            reg: self.0.reg,
-                            names: self.0.names,
-                            entity,
-                        },
-                    })?;
+                    map.next_value_seed(EntitySeed(Seed {
+                        res: self.0.res,
+                        reg: self.0.reg,
+                        names: self.0.names,
+                        entity,
+                    }))?;
                 }
                 Ok(())
             }
@@ -139,9 +137,7 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for UiSeed<'de, 'a> {
     }
 }
 
-pub struct EntitySeed<'de: 'a, 'a> {
-    seed: Seed<'de, 'a>,
-}
+pub struct EntitySeed<'de: 'a, 'a>(Seed<'de, 'a>);
 
 impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
     type Value = ();
@@ -150,7 +146,7 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
     where
         D: serde::Deserializer<'de>,
     {
-        struct Visitor<'de: 'a, 'a>(EntitySeed<'de, 'a>);
+        struct Visitor<'de: 'a, 'a>(Seed<'de, 'a>);
 
         impl<'de, 'a> serde::Visitor<'de> for Visitor<'de, 'a> {
             type Value = ();
@@ -165,7 +161,6 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
             {
                 while let Some(key) = map.next_key::<Cow<str>>()? {
                     map.next_value_seed(self.0
-                        .seed
                         .borrow()
                         .component_seed(key)
                         .map_err(serde::Error::custom)?)?;
@@ -174,7 +169,7 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
             }
         }
 
-        deserializer.deserialize_map(Visitor(self))
+        deserializer.deserialize_map(Visitor(self.0))
     }
 }
 
@@ -201,4 +196,8 @@ fn get_entity<'de, 'a>(
     ents: &'a EntitiesRes,
 ) -> Entity {
     *names.entry(name).or_insert_with(|| ents.create())
+}
+
+fn is_valid_name(s: &str) -> bool {
+    s.chars().all(|c| c == '_' || c.is_ascii_alphanumeric())
 }

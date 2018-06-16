@@ -29,7 +29,7 @@ fn de() {
                 "pressed_off": { "Color": "#0000FF" }
             }
         },
-        "ent1": {
+        "root": {
             "Brush": {
                 "Color": "#FF0000"
             },
@@ -57,7 +57,7 @@ fn de() {
     de::deserialize(
         &mut json::Deserializer::from_str(DATA),
         &registry,
-        &world.res,
+        &mut world.res,
     ).unwrap();
     world.maintain();
 

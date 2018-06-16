@@ -12,7 +12,7 @@ use super::*;
 fn de() {
     const DATA: &'static str = r#"
     {
-        "ent1": {
+        "root": {
             "comp1": 5,
             "comp2": {
                 "value": 52,
@@ -47,7 +47,7 @@ fn de() {
     world.register::<Comp2>();
     registry.register::<Comp2>("comp2");
 
-    deserialize(&mut Deserializer::from_str(DATA), &registry, &world.res).unwrap();
+    deserialize(&mut Deserializer::from_str(DATA), &registry, &mut world.res).unwrap();
     world.maintain();
 
     let ents: Vec<Entity> = (&*world.entities()).join().collect();
@@ -82,7 +82,7 @@ fn de() {
 fn name() {
     const DATA: &'static str = r#"
     {
-        "ent1": {
+        "root": {
             "comp1": 5,
             "comp2": "ent2"
         },
@@ -93,7 +93,7 @@ fn name() {
             "comp2": "ent2"
         },
         "ent4": {
-            "comp2": "ent1"
+            "comp2": "root"
         }
     }
     "#;
@@ -128,11 +128,15 @@ fn name() {
     world_rdr.register::<Comp2>();
     registry.register_with_deserialize::<Comp2>("comp2");
 
-    deserialize(&mut Deserializer::from_str(DATA), &registry, &world_str.res).unwrap();
+    deserialize(
+        &mut Deserializer::from_str(DATA),
+        &registry,
+        &mut world_str.res,
+    ).unwrap();
     deserialize(
         &mut Deserializer::from_reader(Cursor::new(DATA)),
         &registry,
-        &world_rdr.res,
+        &mut world_rdr.res,
     ).unwrap();
     world_str.maintain();
     world_rdr.maintain();

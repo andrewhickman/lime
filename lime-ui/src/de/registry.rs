@@ -59,9 +59,9 @@ impl Registry {
             map: FnvHashMap::with_capacity_and_hasher(4, Default::default()),
         };
 
-        //        world.register::<layout::Constraints>();
-        //        world.register::<layout::Position>();
-        //        world.register::<tree::Node>();
+        reg.register_with_deserialize_and_insert::<layout::Constraints>("Constraints");
+        reg.register_with_deserialize_and_insert::<layout::Position>("Position");
+        reg.register_with_deserialize_and_insert::<tree::Node>("Children");
         reg.register::<draw::Brush>("Brush");
         reg.register_with_deserialize_and_insert::<draw::Style>("Style");
         reg.register_with_deserialize_and_insert::<draw::Visibility>("Visibility");
