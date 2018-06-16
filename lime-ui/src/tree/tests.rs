@@ -121,3 +121,49 @@ fn de() {
         assert_eq!(data.get(ent).unwrap().0, expected_rev.next().unwrap());
     });
 }
+
+#[test]
+#[should_panic(expected = "children defined twice for entity \\'2\\'")]
+fn de_dup() {
+    const DATA: &'static str = r##"
+    {
+        "root": {
+            "Data": 0,
+            "Children": { 
+                "1": {
+                    "Data": 1
+                },
+                "2": {
+                    "Children": { },
+                    "Data": 2,
+                    "Children": {
+                        "3": {
+                            "Data": 3,
+                            "Children": { }
+                        },
+                        "4": {
+                            "Data": 4,
+                            "Children": { }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    "##;
+
+    #[derive(Component, Deserialize)]
+    struct Data(i32);
+
+    let mut world = World::new();
+    let mut registry = de::Registry::new();
+    registry.register::<Data>("Data");
+    world.register::<Node>();
+    world.register::<Data>();
+
+    de::deserialize(
+        &mut json::Deserializer::from_str(DATA),
+        &registry,
+        &mut world.res,
+    ).unwrap();
+}
