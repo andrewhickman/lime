@@ -170,6 +170,7 @@ impl<'de, 'src> Parser<'de, 'src> {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 enum TermOrConst {
     Term(Term),
     Const(f64),

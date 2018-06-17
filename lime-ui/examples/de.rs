@@ -54,20 +54,35 @@ const DATA: &'static str = r##"
             "focused_on": { "Color": "#00FF00" },
             "pressed_on": { "Color": "#0000FF" },
             "disabled_off": { "Color": "#808080" },
-            "normal_off": { "Color": "#FF0000" },
-            "focused_off": { "Color": "#00FF00" },
-            "pressed_off": { "Color": "#0000FF" }
+            "normal_off": { "Color": "#0F0000" },
+            "focused_off": { "Color": "#000F00" },
+            "pressed_off": { "Color": "#00000F" }
         }
     },
     "root": {
         "Brush": {
             "Color": "#ABCDEF"
         },
-        "Style": {
-            "style": "style1",
-            "ty": "ButtonStyle"
-        },
-        "Children": { }
+        "Children": { 
+            "button1": {
+                "Style": {
+                    "style": "style1",
+                    "ty": "ToggleButtonStyle"
+                },
+                "Button": {
+                    "state": "Normal"
+                },
+                "ToggleButton": {
+                    "state": true
+                },
+                "Position": {
+                    "left": "root.left + 50",
+                    "right": "root.right - 50",
+                    "top": "root.top + 50",
+                    "bottom": "root.bottom - 50"
+                }
+            }
+        }
     }
 }
 "##;

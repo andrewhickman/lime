@@ -34,15 +34,21 @@ impl LayoutSystem {
 
         let mut solver = Solver::new();
 
-        let zero = Variable::new();
-        solver.add_constraint(zero | EQ(REQUIRED) | 0.0).unwrap();
-        let width = Variable::new();
-        solver.add_edit_variable(width, REQUIRED - 1.0).unwrap();
-        let height = Variable::new();
-        solver.add_edit_variable(height, REQUIRED - 1.0).unwrap();
+        let pos = poss.entry(root.entity())
+            .unwrap_or_else(throw)
+            .or_insert_with(Default::default)
+            .clone();
 
-        poss.insert(root.entity(), Position::root(zero, width, height))
-            .unwrap_or_else(throw);
+        solver
+            .add_constraint(pos.left_var() | EQ(REQUIRED) | 0.0)
+            .unwrap();
+        solver
+            .add_constraint(pos.top_var() | EQ(REQUIRED) | 0.0)
+            .unwrap();
+        let width = pos.right_var();
+        solver.add_edit_variable(width, REQUIRED - 1.0).unwrap();
+        let height = pos.bottom_var();
+        solver.add_edit_variable(height, REQUIRED - 1.0).unwrap();
 
         let mut sys = LayoutSystem {
             solver,

@@ -19,13 +19,6 @@ impl Default for Position {
 }
 
 impl Position {
-    pub(in layout) fn root(zero: Variable, width: Variable, height: Variable) -> Self {
-        Position {
-            vars: [zero, zero, width, height],
-            vals: [0.0; 4],
-        }
-    }
-
     pub fn new() -> Self {
         Position {
             vars: [
