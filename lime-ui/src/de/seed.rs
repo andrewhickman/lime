@@ -5,7 +5,6 @@ use erased_serde as erased;
 use fnv::FnvHashMap;
 use serde::de as serde;
 use specs::prelude::*;
-use specs::storage::InsertResult;
 use specs::world::EntitiesRes;
 
 use de::{registry, DeserializeError, Registry};
@@ -15,6 +14,7 @@ pub struct Seed<'de: 'a, 'a> {
     pub res: &'a Resources,
     pub reg: &'a Registry,
     pub entity: Entity,
+    pub parent: Option<Entity>,
 }
 
 impl<'de, 'a> Seed<'de, 'a> {
@@ -42,6 +42,7 @@ impl<'de, 'a> Seed<'de, 'a> {
             res: self.res,
             reg: self.reg,
             entity: self.entity,
+            parent: self.parent,
         }
     }
 
@@ -53,12 +54,13 @@ impl<'de, 'a> Seed<'de, 'a> {
         Ok(ComponentSeed { seed: self, de })
     }
 
-    pub fn entity_seed(self, entity: Entity) -> EntitySeed<'de, 'a> {
+    pub(crate) fn entity_seed(self, entity: Entity, parent: Entity) -> EntitySeed<'de, 'a> {
         EntitySeed(Seed {
             names: self.names,
             res: self.res,
             reg: self.reg,
             entity,
+            parent: Some(parent),
         })
     }
 
@@ -71,9 +73,9 @@ impl<'de, 'a> Seed<'de, 'a> {
 
     pub fn insert_with<C, I>(&mut self, comp: C, insert: I) -> Result<(), DeserializeError>
     where
-        I: Fn(C, Entity, &Resources) -> InsertResult<C>,
+        I: for<'de2, 'a2> Fn(C, Seed<'de2, 'a2>) -> Result<Option<C>, erased::Error>,
     {
-        if insert(comp, self.entity, self.res).unwrap().is_some() {
+        if insert(comp, self.borrow()).unwrap().is_some() {
             Err(DeserializeError(format!(
                 "component defined twice for entity '{}'",
                 self.get_name(self.entity)
@@ -127,6 +129,7 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for UiSeed<'de, 'a> {
                         reg: self.0.reg,
                         names: self.0.names,
                         entity,
+                        parent: None,
                     }))?;
                 }
                 Ok(())
@@ -137,7 +140,7 @@ impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for UiSeed<'de, 'a> {
     }
 }
 
-pub struct EntitySeed<'de: 'a, 'a>(Seed<'de, 'a>);
+pub(crate) struct EntitySeed<'de: 'a, 'a>(Seed<'de, 'a>);
 
 impl<'de: 'a, 'a> serde::DeserializeSeed<'de> for EntitySeed<'de, 'a> {
     type Value = ();

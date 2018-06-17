@@ -63,6 +63,18 @@ const DATA: &'static str = r##"
         "Brush": {
             "Color": "#ABCDEF"
         },
+        "Grid": {
+            "rows": [
+                { "type": "abs", "value": 100 },
+                { "type": "rel", "value": 1 },
+                { "type": "abs", "value": 100 }
+            ],
+            "cols": [
+                { "type": "abs", "value": 100 },
+                { "type": "rel", "value": 1 },
+                { "type": "abs", "value": 100 }
+            ]
+        },
         "Children": { 
             "button1": {
                 "Style": {
@@ -75,12 +87,8 @@ const DATA: &'static str = r##"
                 "ToggleButton": {
                     "state": true
                 },
-                "Position": {
-                    "left": "root.left + 50",
-                    "right": "root.right - 50",
-                    "top": "root.top + 50",
-                    "bottom": "root.bottom - 50"
-                }
+                "Row": 1,
+                "Col": 1
             }
         }
     }

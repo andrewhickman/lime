@@ -123,7 +123,7 @@ fn de() {
 }
 
 #[test]
-#[should_panic(expected = "children defined twice for entity \\'2\\'")]
+#[should_panic(expected = "component defined twice for entity \\'2\\'")]
 fn de_dup() {
     const DATA: &'static str = r##"
     {

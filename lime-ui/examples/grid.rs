@@ -14,15 +14,14 @@ use cassowary::strength::*;
 use render::Color;
 use specs::prelude::*;
 use ui::draw::Brush;
-use ui::layout::Position;
+use ui::layout::{Constraints, Position};
 use ui::tree::{Node, Root};
 use ui::widget::grid::{Grid, Size};
 use winit::{Event, EventsLoop, WindowEvent};
 
 fn create_rect(world: &mut World, parent: Entity, col: u32, row: u32, color: Color) -> Entity {
     let pos = Position::new();
-    let mut cons = pos
-        .constraints_builder()
+    let mut cons = pos.constraints_builder()
         .min_size((100.0, 100.0), STRONG)
         .build();
     world
@@ -45,8 +44,10 @@ fn main() {
     let root = world.read_resource::<Root>().entity();
     {
         let poss = world.read_storage();
-        let (grid, cons) = Grid::new(
+        let mut cons = Constraints::default();
+        let grid = Grid::new(
             poss.get(root).unwrap(),
+            &mut cons,
             iter::repeat(Size::Auto).take(2),
             iter::repeat(Size::Auto).take(3),
         );

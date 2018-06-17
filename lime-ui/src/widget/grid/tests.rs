@@ -3,13 +3,14 @@ use std::iter;
 use cassowary::strength::*;
 use render::d2::Point;
 use render::ScreenDimensions;
+use serde_json as json;
 use shrev::EventChannel;
 use specs::prelude::*;
 use specs_mirror::StorageMutExt;
 
 use super::*;
 use draw::{Visibility, VisibilityState};
-use layout::{ConstraintsBuilder, Position};
+use layout::{Constraints, ConstraintsBuilder, Position};
 use tests::init_test;
 use tree::{Node, Root};
 
@@ -20,7 +21,8 @@ fn create_root_grid(
 ) -> Entity {
     let root = world.read_resource::<Root>().entity();
     let poss = world.read_storage();
-    let (grid, cons) = Grid::new(poss.get(root).unwrap(), cols, rows);
+    let mut cons = Constraints::default();
+    let grid = Grid::new(poss.get(root).unwrap(), &mut cons, cols, rows);
     world.write_storage().insert(root, grid).unwrap();
     world.write_storage().insert(root, cons).unwrap();
     root
@@ -33,7 +35,8 @@ fn create_grid(
 ) -> Entity {
     let root = world.read_resource::<Root>().entity();
     let pos = Position::new();
-    let (grid, cons) = Grid::new(&pos, cols, rows);
+    let mut cons = Constraints::default();
+    let grid = Grid::new(&pos, &mut cons, cols, rows);
     Node::with_parent(world.create_entity(), root)
         .with(pos)
         .with(grid)
@@ -395,8 +398,7 @@ fn visibility() {
     let grid = create_grid(&mut world, vec![Size::Auto], vec![Size::Auto]);
 
     let pos = Position::new();
-    let mut cons = pos
-        .constraints_builder()
+    let mut cons = pos.constraints_builder()
         .size((1000.0, 750.0), STRONG)
         .build();
     world
@@ -439,4 +441,20 @@ fn visibility() {
         assert_ulps_eq!(g.width(), 1000.0);
         assert_ulps_eq!(g.height(), 750.0);
     }
+}
+
+#[test]
+fn de() {
+    assert_eq!(
+        json::from_str::<Size>(r#"{ "type": "auto" }"#).unwrap(),
+        Size::Auto
+    );
+    assert_eq!(
+        json::from_str::<Size>(r#"{ "type": "abs", "value": 100 }"#).unwrap(),
+        Size::Abs(100.0)
+    );
+    assert_eq!(
+        json::from_str::<Size>(r#"{ "type": "rel", "value": 1 }"#).unwrap(),
+        Size::Rel(1.0)
+    );
 }

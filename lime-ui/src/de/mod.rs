@@ -4,7 +4,7 @@ mod seed;
 mod tests;
 
 pub use self::registry::{Deserialize, DeserializeAndInsert, Insert, Registry};
-pub use self::seed::{ComponentSeed, EntitySeed, Seed};
+pub use self::seed::{ComponentSeed, Seed};
 
 use std::error::Error;
 use std::fmt;

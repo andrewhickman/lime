@@ -5,7 +5,6 @@ use erased_serde as erased;
 use fnv::FnvHashMap;
 use serde::de as serde;
 use specs::prelude::*;
-use specs::storage::InsertResult;
 
 use de::{DeserializeError, Seed};
 
@@ -22,7 +21,7 @@ pub struct Registry {
 }
 
 pub trait Insert: Sized + 'static {
-    fn insert(self, entity: Entity, res: &Resources) -> InsertResult<Self>;
+    fn insert<'de, 'a>(self, seed: Seed<'de, 'a>) -> Result<Option<Self>, erased::Error>;
 }
 
 pub trait Deserialize: Sized + 'static {
@@ -61,7 +60,7 @@ impl Registry {
 
         reg.register_with_deserialize_and_insert::<layout::Constraints>("Constraints");
         reg.register_with_deserialize_and_insert::<layout::Position>("Position");
-        reg.register_with_deserialize_and_insert::<tree::Node>("Children");
+        reg.register_with_deserialize::<tree::Node>("Children");
         reg.register::<draw::Brush>("Brush");
         reg.register_with_deserialize_and_insert::<draw::Style>("Style");
         reg.register_with_deserialize_and_insert::<draw::Visibility>("Visibility");
@@ -70,7 +69,9 @@ impl Registry {
         reg.register::<widget::button::ToggleButton>("ToggleButton");
         reg.register::<widget::button::ToggleButtonStyle>("ToggleButtonStyle");
         //        world.register::<widget::button::RadioButton>();
-        //        world.register::<widget::grid::Grid>();
+        reg.register_with_deserialize::<widget::grid::Grid>("Grid");
+        reg.register_with_insert::<widget::grid::de::Row>("Row");
+        reg.register_with_insert::<widget::grid::de::Col>("Col");
 
         reg
     }
@@ -153,7 +154,7 @@ pub(in de) fn deserialize_and_insert<C, D, I>(
 where
     D: for<'de, 'a> Fn(Seed<'de, 'a>, &mut erased::Deserializer<'de>) -> Result<C, erased::Error>
         + 'static,
-    I: Fn(C, Entity, &Resources) -> InsertResult<C> + 'static,
+    I: for<'de, 'a> Fn(C, Seed<'de, 'a>) -> Result<Option<C>, erased::Error> + 'static,
 {
     move |mut seed, deserializer| {
         let comp = deserialize(seed.borrow(), deserializer)?;
@@ -162,11 +163,13 @@ where
     }
 }
 
-pub(in de) fn default_insert<C>(comp: C, ent: Entity, res: &Resources) -> InsertResult<C>
+pub(in de) fn default_insert<C>(comp: C, seed: Seed<'_, '_>) -> Result<Option<C>, erased::Error>
 where
     C: Component,
 {
-    WriteStorage::<C>::fetch(res).insert(ent, comp)
+    WriteStorage::<C>::fetch(seed.res)
+        .insert(seed.entity, comp)
+        .map_err(serde::Error::custom)
 }
 
 pub(in de) fn default_deserialize<'de, C>(
