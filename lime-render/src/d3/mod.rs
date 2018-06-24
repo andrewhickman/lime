@@ -11,11 +11,11 @@ use Color;
 
 pub struct Mesh;
 
-pub trait Draw {
+pub trait Draw: 'static {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&Mesh, Color));
 }
 
-impl<T: ?Sized> Draw for T
+impl<T: ?Sized + 'static> Draw for T
 where
     T: Deref,
     T::Target: Draw,

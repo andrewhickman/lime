@@ -26,5 +26,5 @@ mod sys;
 
 pub use self::color::Color;
 pub use self::dim::ScreenDimensions;
-pub use self::render::Renderer;
+pub use self::render::RenderSystem;
 pub use self::sys::init;

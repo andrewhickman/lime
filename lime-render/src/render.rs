@@ -19,9 +19,9 @@ use winit::{EventsLoop, Window, WindowBuilder};
 
 use {d2, d3, ScreenDimensions};
 
-pub struct Renderer {
-    pub(crate) d2: d2::Renderer,
-    pub(crate) d3: d3::Renderer,
+pub struct RenderSystem<D3, D2> {
+    pub(crate) render_d2: d2::Renderer,
+    pub(crate) render_d3: d3::Renderer,
     pub(crate) queue: Arc<Queue>,
     surface: Arc<Surface<Window>>,
     swapchain: Arc<Swapchain<Window>>,
@@ -29,10 +29,17 @@ pub struct Renderer {
     prev_frame: Option<Box<GpuFuture + Send + Sync>>,
     framebuffers: Vec<Arc<FramebufferAbstract + Send + Sync>>,
     swapchain_dirty: bool,
+    draw_d2: D2,
+    draw_d3: D3,
 }
 
-impl Renderer {
-    pub(crate) fn new(events_loop: &EventsLoop, builder: WindowBuilder) -> Self {
+impl<D3: d3::Draw, D2: d2::Draw> RenderSystem<D3, D2> {
+    pub(crate) fn new(
+        events_loop: &EventsLoop,
+        builder: WindowBuilder,
+        draw_d3: D3,
+        draw_d2: D2,
+    ) -> Self {
         let instance = {
             let extensions = vulkano_win::required_extensions();
             Instance::new(None, &extensions, None).unwrap_or_else(throw)
@@ -126,11 +133,11 @@ impl Renderer {
         ).unwrap_or_else(throw),
         ) as Arc<RenderPassAbstract + Send + Sync>;
 
-        let d3 = d3::Renderer::new(
+        let render_d3 = d3::Renderer::new(
             queue.device(),
             Subpass::from(Arc::clone(&render_pass), 0).unwrap(),
         );
-        let d2 = d2::Renderer::new(
+        let render_d2 = d2::Renderer::new(
             queue.device(),
             Subpass::from(Arc::clone(&render_pass), 1).unwrap(),
         );
@@ -140,16 +147,18 @@ impl Renderer {
         let framebuffers =
             create_framebuffers(&render_pass, images, &depth_buffer).unwrap_or_else(throw);
 
-        Renderer {
+        RenderSystem {
             surface,
             queue,
             swapchain,
             framebuffers,
             render_pass,
             prev_frame: None,
-            d2,
-            d3,
+            render_d2,
+            render_d3,
             swapchain_dirty: false,
+            draw_d2,
+            draw_d3,
         }
     }
 
@@ -165,13 +174,7 @@ impl Renderer {
             .into())
     }
 
-    pub(crate) fn render<D3: d3::Draw, D2: d2::Draw>(
-        &mut self,
-        res: &Resources,
-        d3: &D3,
-        d2: &D2,
-        dim: &mut ScreenDimensions,
-    ) {
+    pub(crate) fn render(&mut self, res: &Resources, dim: &mut ScreenDimensions) {
         for _ in 0..5 {
             if self.swapchain_dirty {
                 match self.recreate_swapchain(res, dim) {
@@ -185,7 +188,7 @@ impl Renderer {
                     }
                 }
             } else {
-                match self.try_render(res, dim, d3, d2) {
+                match self.try_render(res, dim) {
                     Ok(()) => {
                         trace!("Draw succeeded.");
                         break;
@@ -216,12 +219,10 @@ impl Renderer {
         Ok(())
     }
 
-    fn try_render<D3: d3::Draw, D2: d2::Draw>(
+    fn try_render(
         &mut self,
         res: &Resources,
         dim: &mut ScreenDimensions,
-        d3: &D3,
-        d2: &D2,
     ) -> Result<(), failure::Error> {
         let (img_num, acquire) = swapchain::acquire_next_image(self.swapchain.clone(), None)?;
         let fb = Arc::clone(&self.framebuffers[img_num]);
@@ -247,11 +248,11 @@ impl Renderer {
             false,
             vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
         )?;
-        let command_buffer = self.d3
-            .draw(res, command_buffer, d3, state.clone())?
+        let command_buffer = self.render_d3
+            .draw(res, command_buffer, &self.draw_d3, state.clone())?
             .next_subpass(false)?;
-        let command_buffer = self.d2
-            .draw(res, command_buffer, d2, state)?
+        let command_buffer = self.render_d2
+            .draw(res, command_buffer, &self.draw_d2, state)?
             .end_render_pass()?
             .build()?;
 
@@ -261,9 +262,7 @@ impl Renderer {
         });
         Ok(())
     }
-}
 
-impl Renderer {
     fn execute(
         &self,
         acquire_future: impl GpuFuture,
