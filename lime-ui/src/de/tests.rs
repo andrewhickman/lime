@@ -2,11 +2,31 @@ use std::borrow::Cow;
 use std::io::Cursor;
 
 use erased_serde as erased;
-use serde::de;
-use serde_json::Deserializer;
+use serde_json as json;
 use specs::prelude::*;
 
 use super::*;
+
+#[derive(Component)]
+pub struct Name(String);
+
+impl Deserialize for Name {
+    fn deserialize<'de, 'a>(
+        seed: Seed<'de, 'a>,
+        deserializer: &mut erased::Deserializer<'de>,
+    ) -> Result<Self, erased::Error> {
+        let this = seed.entity;
+        <() as serde::Deserialize>::deserialize(deserializer)?;
+        Ok(Name(seed.get_name(this).to_owned()))
+    }
+}
+
+pub fn name_map(world: &mut World) -> FnvHashMap<String, Entity> {
+    (&world.read_storage::<Name>(), &*world.entities())
+        .join()
+        .map(|(name, entity)| (name.0.clone(), entity))
+        .collect()
+}
 
 #[test]
 fn de() {
@@ -17,16 +37,19 @@ fn de() {
             "comp2": {
                 "value": 52,
                 "name": "hello"
-            }
+            },
+            "Name": null
         },
         "ent2": {
-            "comp1": 6
+            "comp1": 6,
+            "Name": null
         },
         "ent3": {
             "comp2": {
                 "value": -45,
                 "name": "world"
-            }
+            },
+            "Name": null
         }
     }
     "#;
@@ -46,10 +69,18 @@ fn de() {
     registry.register::<Comp1>("comp1");
     world.register::<Comp2>();
     registry.register::<Comp2>("comp2");
+    world.register::<Name>();
+    registry.register_with_deserialize::<Name>("Name");
 
     Root::create(&mut world);
-    deserialize(&mut Deserializer::from_str(DATA), &registry, &mut world.res).unwrap();
+    deserialize(
+        &mut json::Deserializer::from_str(DATA),
+        &registry,
+        &mut world.res,
+    ).unwrap();
     world.maintain();
+
+    let name_map = name_map(&mut world);
 
     let ents: Vec<Entity> = (&*world.entities()).join().collect();
     assert_eq!(ents.len(), 3);
@@ -57,21 +88,21 @@ fn de() {
     let comp1s = world.read_storage::<Comp1>();
     let comp2s = world.read_storage::<Comp2>();
 
-    assert_eq!(comp1s.get(ents[0]), Some(&Comp1(5)));
+    assert_eq!(comp1s.get(name_map["root"]), Some(&Comp1(5)));
     assert_eq!(
-        comp2s.get(ents[0]),
+        comp2s.get(name_map["root"]),
         Some(&Comp2 {
             value: 52,
             name: "hello".to_string(),
         })
     );
 
-    assert_eq!(comp1s.get(ents[1]), Some(&Comp1(6)));
-    assert_eq!(comp2s.get(ents[1]), None);
+    assert_eq!(comp1s.get(name_map["ent2"]), Some(&Comp1(6)));
+    assert_eq!(comp2s.get(name_map["ent2"]), None);
 
-    assert_eq!(comp1s.get(ents[2]), None);
+    assert_eq!(comp1s.get(name_map["ent3"]), None);
     assert_eq!(
-        comp2s.get(ents[2]),
+        comp2s.get(name_map["ent3"]),
         Some(&Comp2 {
             value: -45,
             name: "world".to_string(),
@@ -85,16 +116,20 @@ fn name() {
     {
         "root": {
             "comp1": 5,
-            "comp2": "ent2"
+            "comp2": "ent2",
+            "Name": null
         },
         "ent2": {
-            "comp1": 6
+            "comp1": 6,
+            "Name": null
         },
         "ent3": {
-            "comp2": "ent2"
+            "comp2": "ent2",
+            "Name": null
         },
         "ent4": {
-            "comp2": "root"
+            "comp2": "root",
+            "Name": null
         }
     }
     "#;
@@ -113,7 +148,7 @@ fn name() {
             #[derive(Deserialize)]
             struct Comp2De<'a>(#[serde(borrow)] Cow<'a, str>);
 
-            let Comp2De(name) = <Comp2De as de::Deserialize>::deserialize(deserializer)?;
+            let Comp2De(name) = <Comp2De as serde::Deserialize>::deserialize(deserializer)?;
             let entity = seed.get_entity(name)?;
             Ok(Comp2(entity))
         }
@@ -128,39 +163,44 @@ fn name() {
     world_str.register::<Comp2>();
     world_rdr.register::<Comp2>();
     registry.register_with_deserialize::<Comp2>("comp2");
+    world_str.register::<Name>();
+    world_rdr.register::<Name>();
+    registry.register_with_deserialize::<Name>("Name");
 
     Root::create(&mut world_str);
     Root::create(&mut world_rdr);
     deserialize(
-        &mut Deserializer::from_str(DATA),
+        &mut json::Deserializer::from_str(DATA),
         &registry,
         &mut world_str.res,
     ).unwrap();
     deserialize(
-        &mut Deserializer::from_reader(Cursor::new(DATA)),
+        &mut json::Deserializer::from_reader(Cursor::new(DATA)),
         &registry,
         &mut world_rdr.res,
     ).unwrap();
     world_str.maintain();
     world_rdr.maintain();
 
-    for world in vec![world_str, world_rdr] {
+    for mut world in vec![world_str, world_rdr] {
+        let name_map = name_map(&mut world);
+
         let ents: Vec<Entity> = (&*world.entities()).join().collect();
         assert_eq!(ents.len(), 4);
 
         let comp1s = world.read_storage::<Comp1>();
         let comp2s = world.read_storage::<Comp2>();
 
-        assert_eq!(comp1s.get(ents[0]), Some(&Comp1(5)));
-        assert_eq!(comp2s.get(ents[0]), Some(&Comp2(ents[1])));
+        assert_eq!(comp1s.get(name_map["root"]), Some(&Comp1(5)));
+        assert_eq!(comp2s.get(name_map["root"]), Some(&Comp2(ents[1])));
 
-        assert_eq!(comp1s.get(ents[1]), Some(&Comp1(6)));
-        assert_eq!(comp2s.get(ents[1]), None);
+        assert_eq!(comp1s.get(name_map["ent2"]), Some(&Comp1(6)));
+        assert_eq!(comp2s.get(name_map["ent2"]), None);
 
-        assert_eq!(comp1s.get(ents[2]), None);
-        assert_eq!(comp2s.get(ents[2]), Some(&Comp2(ents[1])));
+        assert_eq!(comp1s.get(name_map["ent3"]), None);
+        assert_eq!(comp2s.get(name_map["ent3"]), Some(&Comp2(ents[1])));
 
-        assert_eq!(comp1s.get(ents[3]), None);
-        assert_eq!(comp2s.get(ents[3]), Some(&Comp2(ents[0])));
+        assert_eq!(comp1s.get(name_map["ent4"]), None);
+        assert_eq!(comp2s.get(name_map["ent4"]), Some(&Comp2(ents[0])));
     }
 }

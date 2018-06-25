@@ -4,6 +4,7 @@ use specs::prelude::*;
 
 use super::*;
 use de;
+use de::tests::{name_map, Name};
 use draw::Brush;
 use tree::Root;
 use widget::button::{ButtonStyle, ToggleButtonStyle};
@@ -19,13 +20,15 @@ fn de() {
             "Style": {
                 "style": "style1",
                 "ty": "ButtonStyle"
-            }
+            },
+            "Name": null
         },
         "ent2": {
             "Style": {
                 "style": "style1",
                 "ty": "ToggleButtonStyle"
-            }
+            },
+            "Name": null
         },
         "style1": {
             "ButtonStyle": {
@@ -43,17 +46,20 @@ fn de() {
                 "normal_off": { "Color": "#FF0000" },
                 "focused_off": { "Color": "#00FF00" },
                 "pressed_off": { "Color": "#0000FF" }
-            }
+            },
+            "Name": null
         }
     }
     "##;
 
     let mut world = World::new();
-    let registry = de::Registry::new();
+    let mut registry = de::Registry::new();
     world.register::<Brush>();
     world.register::<Style>();
     world.register::<ButtonStyle>();
     world.register::<ToggleButtonStyle>();
+    world.register::<Name>();
+    registry.register_with_deserialize::<Name>("Name");
 
     Root::create(&mut world);
     de::deserialize(
@@ -63,18 +69,34 @@ fn de() {
     ).unwrap();
     world.maintain();
 
+    let name_map = name_map(&mut world);
+
     let ents: Vec<Entity> = (&*world.entities()).join().collect();
     assert_eq!(ents.len(), 3);
 
     let styles = world.read_storage::<Style>();
-    assert_eq!(styles.get(ents[0]).unwrap().get(), ents[1]);
-    assert!(styles.get(ents[0]).unwrap().is::<ButtonStyle>());
-    assert!(styles.get(ents[1]).is_none());
-    assert_eq!(styles.get(ents[2]).unwrap().get(), ents[1]);
-    assert!(styles.get(ents[2]).unwrap().is::<ToggleButtonStyle>());
+    assert_eq!(
+        styles.get(name_map["root"]).unwrap().get(),
+        name_map["style1"]
+    );
+    assert!(styles.get(name_map["root"]).unwrap().is::<ButtonStyle>());
+    assert!(styles.get(name_map["style1"]).is_none());
+    assert_eq!(
+        styles.get(name_map["ent2"]).unwrap().get(),
+        name_map["style1"]
+    );
+    assert!(
+        styles
+            .get(name_map["ent2"])
+            .unwrap()
+            .is::<ToggleButtonStyle>()
+    );
 
     let brushes = world.read_storage::<Brush>();
-    assert_eq!(brushes.get(ents[0]), Some(&Brush::Color(Color::RED)));
-    assert_eq!(brushes.get(ents[1]), None);
-    assert_eq!(brushes.get(ents[2]), None);
+    assert_eq!(
+        brushes.get(name_map["root"]),
+        Some(&Brush::Color(Color::RED))
+    );
+    assert_eq!(brushes.get(name_map["ent2"]), None);
+    assert_eq!(brushes.get(name_map["style1"]), None);
 }

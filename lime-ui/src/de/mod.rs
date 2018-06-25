@@ -1,7 +1,8 @@
+#[cfg(test)]
+pub mod tests;
+
 mod registry;
 mod seed;
-#[cfg(test)]
-mod tests;
 
 pub use self::registry::{Deserialize, DeserializeAndInsert, Insert, Registry};
 pub use self::seed::{ComponentSeed, Seed};

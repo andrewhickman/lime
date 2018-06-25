@@ -1,6 +1,4 @@
 mod lex;
-#[cfg(test)]
-mod tests;
 
 use std::borrow::Cow;
 use std::error::Error;
