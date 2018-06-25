@@ -14,7 +14,7 @@ mod common;
 use std::panic;
 
 use specs::prelude::*;
-use ui::de::{self, Registry};
+use ui::de::{deserialize, Registry};
 use ui::draw::DrawUi;
 use ui::event::EventSystem;
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
@@ -28,11 +28,11 @@ pub fn init_de(events_loop: &EventsLoop, data: &str) -> (World, Dispatcher<'stat
     let mut world = World::new();
     let mut dispatcher = DispatcherBuilder::new();
     let render_sys = render::init(&mut world, &events_loop, WindowBuilder::new(), D3, DrawUi);
-    de::init(
-        &mut world,
-        &mut dispatcher,
+    ui::init(&mut world, &mut dispatcher);
+    deserialize(
         &mut json::Deserializer::from_str(data),
         &Registry::new(),
+        &mut world.res,
     ).unwrap();
     let dispatcher = dispatcher.with_thread_local(render_sys).build();
 

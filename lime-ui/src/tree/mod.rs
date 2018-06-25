@@ -13,8 +13,9 @@ pub struct Node {
 impl Node {
     pub fn add_child(node: Entity, parent: Entity, store: &mut WriteStorage<Node>) -> Self {
         store
-            .get_mut(parent)
+            .entry(parent)
             .expect("invalid parent")
+            .or_insert_with(Node::new)
             .children
             .push(node);
         Node {
@@ -88,14 +89,10 @@ pub struct Root {
 impl Root {
     pub fn create(world: &mut World) -> Self {
         let root = Root {
-            entity: world.create_entity().with(Node::new()).build(),
+            entity: world.create_entity().build(),
         };
         world.add_resource(root);
         root
-    }
-
-    pub(crate) fn new(entity: Entity) -> Self {
-        Root { entity }
     }
 
     pub fn entity(&self) -> Entity {

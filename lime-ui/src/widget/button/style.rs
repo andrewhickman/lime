@@ -146,36 +146,40 @@ impl<'a> System<'a> for ToggleButtonStyleSystem {
     fn run(&mut self, (btns, tgls, styles, tgl_styles, mut brushes): Self::SystemData) {
         for event in btns.read_events(&mut self.btn_rx) {
             if let Some(style) = styles.get(event.entity) {
-                if let (Some(tgl), Some(tgl_style)) =
-                    (tgls.get(event.entity), tgl_styles.get(style.get()))
-                {
-                    brushes
-                        .insert(
-                            event.entity,
-                            tgl_style.brush((event.new, tgl.state())).clone(),
-                        )
-                        .ok();
+                if style.is::<ToggleButtonStyle>() {
+                    if let (Some(tgl), Some(tgl_style)) =
+                        (tgls.get(event.entity), tgl_styles.get(style.get()))
+                    {
+                        brushes
+                            .insert(
+                                event.entity,
+                                tgl_style.brush((event.new, tgl.state())).clone(),
+                            )
+                            .ok();
+                    }
                 }
             }
         }
 
         for event in tgls.read_events(&mut self.tgl_rx) {
             if let Some(style) = styles.get(event.entity) {
-                if let (Some(btn), Some(tgl_style)) =
-                    (btns.get(event.entity), tgl_styles.get(style.get()))
-                {
-                    brushes
-                        .insert(
-                            event.entity,
-                            tgl_style.brush((btn.state(), event.state)).clone(),
-                        )
-                        .ok();
+                if style.is::<ToggleButtonStyle>() {
+                    if let (Some(btn), Some(tgl_style)) =
+                        (btns.get(event.entity), tgl_styles.get(style.get()))
+                    {
+                        brushes
+                            .insert(
+                                event.entity,
+                                tgl_style.brush((btn.state(), event.state)).clone(),
+                            )
+                            .ok();
+                    }
                 }
             }
         }
 
         for event in styles.read_events(&mut self.style_rx) {
-            if event.style.is::<ButtonStyle>() {
+            if event.style.is::<ToggleButtonStyle>() {
                 if let (Some(btn), Some(tgl), Some(btn_style)) = (
                     btns.get(event.entity),
                     tgls.get(event.entity),

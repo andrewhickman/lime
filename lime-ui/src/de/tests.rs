@@ -47,6 +47,7 @@ fn de() {
     world.register::<Comp2>();
     registry.register::<Comp2>("comp2");
 
+    Root::create(&mut world);
     deserialize(&mut Deserializer::from_str(DATA), &registry, &mut world.res).unwrap();
     world.maintain();
 
@@ -128,6 +129,8 @@ fn name() {
     world_rdr.register::<Comp2>();
     registry.register_with_deserialize::<Comp2>("comp2");
 
+    Root::create(&mut world_str);
+    Root::create(&mut world_rdr);
     deserialize(
         &mut Deserializer::from_str(DATA),
         &registry,

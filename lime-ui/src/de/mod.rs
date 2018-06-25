@@ -6,6 +6,7 @@ mod tests;
 pub use self::registry::{Deserialize, DeserializeAndInsert, Insert, Registry};
 pub use self::seed::{ComponentSeed, Seed};
 
+use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
@@ -16,7 +17,6 @@ use specs::prelude::*;
 
 use de::seed::UiSeed;
 use tree::Root;
-use {init_dispatcher, init_world};
 
 pub fn deserialize<'de, D>(
     deserializer: D,
@@ -27,28 +27,9 @@ where
     D: serde::Deserializer<'de>,
 {
     let mut names = FnvHashMap::default();
-    serde::DeserializeSeed::deserialize(UiSeed::new(reg, res, &mut names), deserializer)?;
-    if let Some(&entity) = names.get("root") {
-        res.insert(Root::new(entity));
-        Ok(())
-    } else {
-        Err(serde::Error::custom("no root entity defined"))
-    }
-}
-
-pub fn init<'de, D>(
-    world: &mut World,
-    dispatcher: &mut DispatcherBuilder<'_, '_>,
-    deserializer: D,
-    reg: &Registry,
-) -> Result<(), D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    init_world(world);
-    deserialize(deserializer, reg, &mut world.res)?;
-    init_dispatcher(world, dispatcher);
-    Ok(())
+    let root = res.fetch::<Root>().entity();
+    names.insert(Cow::Borrowed("root"), root);
+    serde::DeserializeSeed::deserialize(UiSeed::new(reg, res, &mut names), deserializer)
 }
 
 #[derive(Debug)]

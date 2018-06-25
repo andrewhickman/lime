@@ -102,6 +102,7 @@ fn de() {
     world.register::<Node>();
     world.register::<Data>();
 
+    Root::create(&mut world);
     de::deserialize(
         &mut json::Deserializer::from_str(DATA),
         &registry,
@@ -161,6 +162,7 @@ fn de_dup() {
     world.register::<Node>();
     world.register::<Data>();
 
+    Root::create(&mut world);
     de::deserialize(
         &mut json::Deserializer::from_str(DATA),
         &registry,
