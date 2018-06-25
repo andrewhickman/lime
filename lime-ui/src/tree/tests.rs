@@ -168,4 +168,5 @@ fn de_dup() {
         &registry,
         &mut world.res,
     ).unwrap();
+    world.maintain();
 }

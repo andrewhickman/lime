@@ -34,6 +34,7 @@ pub fn init_de(events_loop: &EventsLoop, data: &str) -> (World, Dispatcher<'stat
         &Registry::new(),
         &mut world.res,
     ).unwrap();
+    world.maintain();
     let dispatcher = dispatcher.with_thread_local(render_sys).build();
 
     (world, dispatcher)
