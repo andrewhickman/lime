@@ -1,13 +1,16 @@
+mod build;
 mod store;
 
+pub use self::build::ConstraintsBuilder;
 pub use self::store::ConstraintsStorage;
 
-use std::iter::FromIterator;
 use std::mem;
 
 use cassowary::Constraint;
 use fnv::FnvHashSet;
 use specs::prelude::*;
+
+use layout::Position;
 
 pub struct Constraints {
     cons: FnvHashSet<Constraint>,
@@ -24,20 +27,9 @@ impl Component for Constraints {
     type Storage = ConstraintsStorage;
 }
 
-impl Default for Constraints {
-    fn default() -> Self {
-        Constraints::new(FnvHashSet::default())
-    }
-}
-
 impl Constraints {
-    pub fn new(cons: FnvHashSet<Constraint>) -> Self {
-        let updates = cons.iter().cloned().map(ConstraintUpdate::Add).collect();
-        Constraints {
-            cons,
-            updates,
-            active: true,
-        }
+    pub fn new(pos: &Position) -> Self {
+        ConstraintsBuilder::new(pos).build()
     }
 
     pub fn add(&mut self, con: Constraint) {
@@ -76,15 +68,6 @@ impl Constraints {
             self.updates
                 .extend(self.cons.iter().cloned().map(ConstraintUpdate::Remove))
         }
-    }
-}
-
-impl FromIterator<Constraint> for Constraints {
-    fn from_iter<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = Constraint>,
-    {
-        Constraints::new(FnvHashSet::from_iter(iter))
     }
 }
 

@@ -33,15 +33,15 @@ impl<'de, 'a> serde::DeserializeSeed<'de> for GridSeed<'de, 'a> {
 
         let GridDe { rows, cols } = serde::Deserialize::deserialize(deserializer)?;
 
-        let mut cons = WriteStorage::<Constraints>::fetch(self.0.res);
-        let con = cons.entry(self.0.entity)
-            .unwrap()
-            .or_insert_with(Default::default);
-
         let mut poss = WriteStorage::<Position>::fetch(self.0.res);
         let pos = poss.entry(self.0.entity)
             .unwrap()
             .or_insert_with(Default::default);
+
+        let mut cons = WriteStorage::<Constraints>::fetch(self.0.res);
+        let con = cons.entry(self.0.entity)
+            .unwrap()
+            .or_insert_with(|| Constraints::new(pos));
 
         Ok(Grid::new(pos, con, cols, rows))
     }
@@ -54,15 +54,15 @@ impl Insert for Row {
     fn insert<'de, 'a>(self, seed: Seed<'de, 'a>) -> Result<Option<Self>, erased::Error> {
         let grids = ReadStorage::<Grid>::fetch(seed.res);
         if let Some(grid) = seed.parent.and_then(|ent| grids.get(ent)) {
-            let mut cons = WriteStorage::<Constraints>::fetch(seed.res);
-            let con = cons.entry(seed.entity)
-                .unwrap()
-                .or_insert_with(Default::default);
-
             let mut poss = WriteStorage::<Position>::fetch(seed.res);
             let pos = poss.entry(seed.entity)
                 .unwrap()
                 .or_insert_with(Default::default);
+
+            let mut cons = WriteStorage::<Constraints>::fetch(seed.res);
+            let con = cons.entry(seed.entity)
+                .unwrap()
+                .or_insert_with(|| Constraints::new(pos));
 
             grid.insert_row(self.0, pos, con);
             Ok(None)
@@ -82,15 +82,15 @@ impl Insert for Col {
     fn insert<'de, 'a>(self, seed: Seed<'de, 'a>) -> Result<Option<Self>, erased::Error> {
         let grids = ReadStorage::<Grid>::fetch(seed.res);
         if let Some(grid) = seed.parent.and_then(|ent| grids.get(ent)) {
-            let mut cons = WriteStorage::<Constraints>::fetch(seed.res);
-            let con = cons.entry(seed.entity)
-                .unwrap()
-                .or_insert_with(Default::default);
-
             let mut poss = WriteStorage::<Position>::fetch(seed.res);
             let pos = poss.entry(seed.entity)
                 .unwrap()
                 .or_insert_with(Default::default);
+
+            let mut cons = WriteStorage::<Constraints>::fetch(seed.res);
+            let con = cons.entry(seed.entity)
+                .unwrap()
+                .or_insert_with(|| Constraints::new(pos));
 
             grid.insert_col(self.0, pos, con);
             Ok(None)

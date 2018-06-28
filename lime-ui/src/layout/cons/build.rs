@@ -2,6 +2,7 @@ use cassowary::WeightedRelation::*;
 use cassowary::{strength, Constraint};
 use fnv::FnvHashSet;
 
+use layout::cons::ConstraintUpdate;
 use layout::{Constraints, Position};
 
 pub struct ConstraintsBuilder<'a> {
@@ -13,7 +14,7 @@ impl<'a> ConstraintsBuilder<'a> {
     pub(in layout) fn new(pos: &'a Position) -> Self {
         let mut cons = FnvHashSet::with_capacity_and_hasher(2, Default::default());
         cons.insert(pos.width_var() | GE(strength::REQUIRED) | 0.0);
-        cons.insert(pos.width_var() | GE(strength::REQUIRED) | 0.0);
+        cons.insert(pos.height_var() | GE(strength::REQUIRED) | 0.0);
         ConstraintsBuilder { pos, cons }
     }
 
@@ -79,6 +80,15 @@ impl<'a> ConstraintsBuilder<'a> {
     }
 
     pub fn build(self) -> Constraints {
-        Constraints::new(self.cons)
+        let updates = self.cons
+            .iter()
+            .cloned()
+            .map(ConstraintUpdate::Add)
+            .collect();
+        Constraints {
+            cons: self.cons,
+            updates,
+            active: true,
+        }
     }
 }

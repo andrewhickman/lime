@@ -21,8 +21,9 @@ fn create_root_grid(
 ) -> Entity {
     let root = world.read_resource::<Root>().entity();
     let poss = world.read_storage();
-    let mut cons = Constraints::default();
-    let grid = Grid::new(poss.get(root).unwrap(), &mut cons, cols, rows);
+    let pos = poss.get(root).unwrap();
+    let mut cons = Constraints::new(&pos);
+    let grid = Grid::new(pos, &mut cons, cols, rows);
     world.write_storage().insert(root, grid).unwrap();
     world.write_storage().insert(root, cons).unwrap();
     root
@@ -35,7 +36,7 @@ fn create_grid(
 ) -> Entity {
     let root = world.read_resource::<Root>().entity();
     let pos = Position::new();
-    let mut cons = Constraints::default();
+    let mut cons = Constraints::new(&pos);
     let grid = Grid::new(&pos, &mut cons, cols, rows);
     Node::with_parent(world.create_entity(), root)
         .with(pos)

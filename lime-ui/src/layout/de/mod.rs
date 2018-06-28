@@ -44,9 +44,13 @@ impl<'de, 'a> serde::DeserializeSeed<'de> for ConstraintsSeed<'de, 'a> {
                 A: serde::SeqAccess<'de>,
             {
                 let mut cons = WriteStorage::<Constraints>::fetch(self.0.res);
-                let cons = cons.entry(self.0.entity)
-                    .unwrap()
-                    .or_insert_with(Default::default);
+                let cons = cons.entry(self.0.entity).unwrap().or_insert_with(|| {
+                    let mut poss = WriteStorage::<Position>::fetch(self.0.res);
+                    let pos = poss.entry(self.0.entity)
+                        .unwrap()
+                        .or_insert_with(Default::default);
+                    Constraints::new(pos)
+                });
 
                 if let Some(size) = seq.size_hint() {
                     cons.reserve(size);
@@ -132,7 +136,7 @@ impl<'de, 'a> serde::DeserializeSeed<'de> for PositionSeed<'de, 'a> {
         let mut cons = WriteStorage::<Constraints>::fetch(self.0.res);
         cons.entry(self.0.entity)
             .unwrap()
-            .or_insert_with(Default::default)
+            .or_insert_with(|| Constraints::new(&pos))
             .extend(left.into_iter().chain(top).chain(right).chain(bottom));
 
         Ok(())

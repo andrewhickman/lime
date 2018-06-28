@@ -1,4 +1,3 @@
-use std::iter::FromIterator;
 use std::mem;
 
 use cassowary::strength::REQUIRED;
@@ -8,7 +7,7 @@ use shrev::EventChannel;
 use winit::{self, ModifiersState, WindowEvent};
 
 use super::*;
-use layout::{Constraints, Position};
+use layout::Position;
 use tests::init_test;
 use tree::{Node, Root};
 
@@ -33,12 +32,12 @@ fn create_rect(
     height: f64,
 ) -> EntityBuilder {
     let pos = Position::new();
-    let cons = Constraints::from_iter(vec![
-        pos.left_var() | EQ(REQUIRED) | left,
-        pos.top_var() | EQ(REQUIRED) | top,
-        pos.width_var() | EQ(REQUIRED) | width,
-        pos.height_var() | EQ(REQUIRED) | height,
-    ]);
+    let cons = pos.constraints_builder()
+        .with(pos.left_var() | EQ(REQUIRED) | left)
+        .with(pos.top_var() | EQ(REQUIRED) | top)
+        .with(pos.width_var() | EQ(REQUIRED) | width)
+        .with(pos.height_var() | EQ(REQUIRED) | height)
+        .build();
 
     Node::with_parent(world.create_entity(), parent)
         .with(pos)

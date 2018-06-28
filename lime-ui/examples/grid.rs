@@ -44,9 +44,10 @@ fn main() {
     let root = world.read_resource::<Root>().entity();
     {
         let poss = world.read_storage();
-        let mut cons = Constraints::default();
+        let pos = poss.get(root).unwrap();
+        let mut cons = Constraints::new(pos);
         let grid = Grid::new(
-            poss.get(root).unwrap(),
+            pos,
             &mut cons,
             iter::repeat(Size::Auto).take(2),
             iter::repeat(Size::Auto).take(3),
