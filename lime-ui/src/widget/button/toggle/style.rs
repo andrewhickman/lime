@@ -18,7 +18,7 @@ pub struct ToggleButtonStyle {
 impl ToggleButtonStyle {
     pub fn brush(&self, state: (ButtonState, bool)) -> &Brush {
         match state.1 {
-            false => self.on.brush(state.0),
+            false => self.off.brush(state.0),
             true => self.on.brush(state.0),
         }
     }

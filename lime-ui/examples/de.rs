@@ -43,21 +43,19 @@ pub fn init_de(events_loop: &EventsLoop, data: &str) -> (World, Dispatcher<'stat
 const DATA: &'static str = r##"
 {
     "style1": {
-        "ButtonStyle": {
-            "disabled": { "Color": "#808080" },
-            "normal": { "Color": "#FF0000" },
-            "focused": { "Color": "#00FF00" },
-            "pressed": { "Color": "#0000FF" }
-        },
-        "ToggleButtonStyle": {
-            "disabled_on": { "Color": "#808080" },
-            "normal_on": { "Color": "#FF0000" },
-            "focused_on": { "Color": "#00FF00" },
-            "pressed_on": { "Color": "#0000FF" },
-            "disabled_off": { "Color": "#808080" },
-            "normal_off": { "Color": "#0F0000" },
-            "focused_off": { "Color": "#000F00" },
-            "pressed_off": { "Color": "#00000F" }
+        "RadioButtonStyle": {
+            "on": {
+                "disabled": { "Color": "#808080" },
+                "normal": { "Color": "#FF0000" },
+                "focused": { "Color": "#00FF00" },
+                "pressed": { "Color": "#0000FF" }
+            },
+            "off": {
+                "disabled": { "Color": "#808080" },
+                "normal": { "Color": "#7F0000" },
+                "focused": { "Color": "#007F00" },
+                "pressed": { "Color": "#00007F" }
+            }
         }
     },
     "root": {
@@ -73,23 +71,69 @@ const DATA: &'static str = r##"
             "cols": [
                 { "type": "abs", "value": 100 },
                 { "type": "rel", "value": 1 },
+                { "type": "abs", "value": 100 },
+                { "type": "rel", "value": 1 },
+                { "type": "abs", "value": 100 },
+                { "type": "rel", "value": 1 },
                 { "type": "abs", "value": 100 }
             ]
         },
+        "RadioButtonGroup": [
+            "button1",
+            "button2",
+            "button3"
+        ],
         "Children": { 
             "button1": {
                 "Style": {
                     "style": "style1",
-                    "ty": "ToggleButtonStyle"
+                    "ty": "RadioButtonStyle"
                 },
                 "Button": {
                     "state": "Normal"
                 },
                 "ToggleButton": {
-                    "state": true
+                    "state": false
+                },
+                "RadioButton": {
+                    "group": "root"
                 },
                 "Row": 1,
                 "Col": 1
+            },            
+            "button2": {
+                "Style": {
+                    "style": "style1",
+                    "ty": "RadioButtonStyle"
+                },
+                "Button": {
+                    "state": "Normal"
+                },
+                "ToggleButton": {
+                    "state": false
+                },
+                "RadioButton": {
+                    "group": "root"
+                },
+                "Row": 1,
+                "Col": 3
+            },
+            "button3": {
+                "Style": {
+                    "style": "style1",
+                    "ty": "RadioButtonStyle"
+                },
+                "Button": {
+                    "state": "Normal"
+                },
+                "ToggleButton": {
+                    "state": false 
+                },
+                "RadioButton": {
+                    "group": "root"
+                },
+                "Row": 1,
+                "Col": 5
             }
         }
     }

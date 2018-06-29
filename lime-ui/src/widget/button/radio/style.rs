@@ -50,21 +50,21 @@ impl<'a> System<'a> for RadioButtonStyleSystem {
         ReadStorage<'a, Button>,
         ReadStorage<'a, ToggleButton>,
         ReadStorage<'a, Style>,
-        ReadStorage<'a, ToggleButtonStyle>,
+        ReadStorage<'a, RadioButtonStyle>,
         WriteStorage<'a, Brush>,
     );
 
-    fn run(&mut self, (btns, tgls, styles, tgl_styles, mut brushes): Self::SystemData) {
+    fn run(&mut self, (btns, tgls, styles, rad_styles, mut brushes): Self::SystemData) {
         for event in btns.read_events(&mut self.btn_rx) {
             if let Some(style) = styles.get(event.entity) {
-                if style.is::<ToggleButtonStyle>() {
-                    if let (Some(tgl), Some(tgl_style)) =
-                        (tgls.get(event.entity), tgl_styles.get(style.get()))
+                if style.is::<RadioButtonStyle>() {
+                    if let (Some(tgl), Some(rad_style)) =
+                        (tgls.get(event.entity), rad_styles.get(style.get()))
                     {
                         brushes
                             .insert(
                                 event.entity,
-                                tgl_style.brush((event.new, tgl.state())).clone(),
+                                rad_style.brush((event.new, tgl.state())).clone(),
                             )
                             .ok();
                     }
@@ -74,14 +74,14 @@ impl<'a> System<'a> for RadioButtonStyleSystem {
 
         for event in tgls.read_events(&mut self.tgl_rx) {
             if let Some(style) = styles.get(event.entity) {
-                if style.is::<ToggleButtonStyle>() {
-                    if let (Some(btn), Some(tgl_style)) =
-                        (btns.get(event.entity), tgl_styles.get(style.get()))
+                if style.is::<RadioButtonStyle>() {
+                    if let (Some(btn), Some(rad_style)) =
+                        (btns.get(event.entity), rad_styles.get(style.get()))
                     {
                         brushes
                             .insert(
                                 event.entity,
-                                tgl_style.brush((btn.state(), event.state)).clone(),
+                                rad_style.brush((btn.state(), event.state)).clone(),
                             )
                             .ok();
                     }
@@ -90,16 +90,16 @@ impl<'a> System<'a> for RadioButtonStyleSystem {
         }
 
         for event in styles.read_events(&mut self.style_rx) {
-            if event.style.is::<ToggleButtonStyle>() {
-                if let (Some(btn), Some(tgl), Some(btn_style)) = (
+            if event.style.is::<RadioButtonStyle>() {
+                if let (Some(btn), Some(tgl), Some(rad_style)) = (
                     btns.get(event.entity),
                     tgls.get(event.entity),
-                    tgl_styles.get(event.style.get()),
+                    rad_styles.get(event.style.get()),
                 ) {
                     brushes
                         .insert(
                             event.entity,
-                            btn_style.brush((btn.state(), tgl.state())).clone(),
+                            rad_style.brush((btn.state(), tgl.state())).clone(),
                         )
                         .ok();
                 }
