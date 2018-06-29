@@ -38,14 +38,18 @@ fn de() {
                 "pressed": { "Color": "#0000FF" }
             },
             "ToggleButtonStyle": {
-                "disabled_on": { "Color": "#808080" },
-                "normal_on": { "Color": "#FF0000" },
-                "focused_on": { "Color": "#00FF00" },
-                "pressed_on": { "Color": "#0000FF" },
-                "disabled_off": { "Color": "#808080" },
-                "normal_off": { "Color": "#FF0000" },
-                "focused_off": { "Color": "#00FF00" },
-                "pressed_off": { "Color": "#0000FF" }
+                "on": {
+                    "disabled": { "Color": "#808080" },
+                    "normal": { "Color": "#FF0000" },
+                    "focused": { "Color": "#00FF00" },
+                    "pressed": { "Color": "#0000FF" }
+                },
+                "off": {
+                    "disabled": { "Color": "#808080" },
+                    "normal": { "Color": "#FF0000" },
+                    "focused": { "Color": "#00FF00" },
+                    "pressed": { "Color": "#0000FF" }
+                }
             },
             "Name": null
         }

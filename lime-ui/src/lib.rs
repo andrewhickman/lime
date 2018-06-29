@@ -50,6 +50,7 @@ pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
     world.register::<widget::button::ToggleButton>();
     world.register::<widget::button::ToggleButtonStyle>();
     world.register::<widget::button::RadioButton>();
+    world.register::<widget::button::RadioButtonGroup>();
     world.register::<widget::grid::Grid>();
 
     let root = tree::Root::create(world);
@@ -59,6 +60,9 @@ pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
 
     layout::LayoutSystem::add(world, dispatcher);
     widget::button::ButtonSystem::add(world, dispatcher);
+    widget::button::ToggleButtonSystem::add(world, dispatcher);
+    widget::button::RadioButtonSystem::add(world, dispatcher);
     widget::button::ButtonStyleSystem::add(world, dispatcher);
     widget::button::ToggleButtonStyleSystem::add(world, dispatcher);
+    widget::button::RadioButtonStyleSystem::add(world, dispatcher);
 }

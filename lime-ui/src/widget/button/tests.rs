@@ -1,5 +1,4 @@
-use std::sync::Arc;
-
+use specs::prelude::*;
 use specs_mirror::{StorageExt, StorageMutExt};
 use winit::{ModifiersState, MouseButton};
 
@@ -217,20 +216,28 @@ fn radio_button() {
     let mut tgl_rdr3 = world.write_storage::<ToggleButton>().register_reader();
     let root = world.read_resource::<Root>().entity();
 
+    let group = world.create_entity().build();
+
     let btn1 = Node::with_parent(world.create_entity(), root)
         .with(Button::new(true))
         .with(ToggleButton::new(false))
+        .with(RadioButton::new(group))
         .build();
     let btn2 = Node::with_parent(world.create_entity(), root)
         .with(Button::new(true))
         .with(ToggleButton::new(false))
+        .with(RadioButton::new(group))
         .build();
     let btn3 = Node::with_parent(world.create_entity(), root)
         .with(Button::new(true))
         .with(ToggleButton::new(false))
+        .with(RadioButton::new(group))
         .build();
 
-    RadioButton::create_group(&mut world.write_storage(), Arc::new([btn1, btn2, btn3])).unwrap();
+    world
+        .write_storage()
+        .insert(group, RadioButtonGroup::new(vec![btn1, btn2, btn3]))
+        .unwrap();
 
     emit_mouse_event(&mut world, btn1, Enter);
     dispatcher.dispatch(&world.res);
