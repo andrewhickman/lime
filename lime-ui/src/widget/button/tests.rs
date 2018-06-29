@@ -1,8 +1,11 @@
+use serde_json as json;
 use specs::prelude::*;
 use specs_mirror::{StorageExt, StorageMutExt};
 use winit::{ModifiersState, MouseButton};
 
 use super::*;
+use de;
+use de::tests::{name_map, Name};
 use event::tests::emit_mouse_event;
 use tests::init_test;
 use tree::{Node, Root};
@@ -308,4 +311,71 @@ fn radio_button() {
     assert_eq!(was_toggled(&mut world, btn1, &mut tgl_rdr1), None);
     assert_eq!(was_toggled(&mut world, btn2, &mut tgl_rdr2), None);
     assert_eq!(was_toggled(&mut world, btn3, &mut tgl_rdr3), None);
+}
+
+#[test]
+fn de() {
+    const DATA: &'static str = r##"
+    {
+        "root": {
+            "RadioButtonGroup": [
+                "rb1", "rb2", "rb3"
+            ],
+            "Name": null
+        },
+        "rb1": {
+            "RadioButton": {
+                "group": "root"
+            },
+            "Name": null
+        },
+        "rb2": {
+            "RadioButton": {
+                "group": "root"
+            },
+            "Name": null
+        },
+        "rb3": {
+            "RadioButton": {
+                "group": "root"
+            },
+            "Name": null
+        }
+    }
+    "##;
+
+    let mut world = World::new();
+    let mut registry = de::Registry::new();
+    world.register::<RadioButton>();
+    world.register::<RadioButtonGroup>();
+    world.register::<Name>();
+    registry.register_with_deserialize::<Name>("Name");
+
+    Root::create(&mut world);
+    de::deserialize(
+        &mut json::Deserializer::from_str(DATA),
+        &registry,
+        &mut world.res,
+    ).unwrap();
+    world.maintain();
+
+    let name_map = name_map(&mut world);
+
+    let ents: Vec<Entity> = (&*world.entities()).join().collect();
+    assert_eq!(ents.len(), 4);
+
+    let rads = world.read_storage::<RadioButton>();
+    assert!(rads.get(name_map["root"]).is_none());
+    assert_eq!(rads.get(name_map["rb1"]).unwrap().group(), name_map["root"]);
+    assert_eq!(rads.get(name_map["rb2"]).unwrap().group(), name_map["root"]);
+    assert_eq!(rads.get(name_map["rb3"]).unwrap().group(), name_map["root"]);
+
+    let rad_grps = world.read_storage::<RadioButtonGroup>();
+    assert_eq!(
+        rad_grps.get(name_map["root"]).unwrap().entities(),
+        &[name_map["rb1"], name_map["rb2"], name_map["rb3"]]
+    );
+    assert!(rad_grps.get(name_map["rb1"]).is_none());
+    assert!(rad_grps.get(name_map["rb2"]).is_none());
+    assert!(rad_grps.get(name_map["rb3"]).is_none());
 }

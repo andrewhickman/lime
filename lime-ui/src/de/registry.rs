@@ -68,7 +68,9 @@ impl Registry {
         reg.register::<widget::button::ButtonStyle>("ButtonStyle");
         reg.register::<widget::button::ToggleButton>("ToggleButton");
         reg.register::<widget::button::ToggleButtonStyle>("ToggleButtonStyle");
-        //        world.register::<widget::button::RadioButton>();
+        reg.register_with_deserialize::<widget::button::RadioButton>("RadioButton");
+        reg.register_with_deserialize::<widget::button::RadioButtonGroup>("RadioButtonGroup");
+        reg.register::<widget::button::RadioButtonStyle>("RadioButtonStyle");
         reg.register_with_deserialize::<widget::grid::Grid>("Grid");
         reg.register_with_insert::<widget::grid::de::Row>("Row");
         reg.register_with_insert::<widget::grid::de::Col>("Col");

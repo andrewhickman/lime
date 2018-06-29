@@ -7,7 +7,7 @@ use de;
 use de::tests::{name_map, Name};
 use draw::Brush;
 use tree::Root;
-use widget::button::{ButtonStyle, ToggleButtonStyle};
+use widget::button::{ButtonStyle, RadioButtonStyle, ToggleButtonStyle};
 
 #[test]
 fn de() {
@@ -51,6 +51,20 @@ fn de() {
                     "pressed": { "Color": "#0000FF" }
                 }
             },
+            "RadioButtonStyle": {
+                "on": {
+                    "disabled": { "Color": "#808080" },
+                    "normal": { "Color": "#FF0000" },
+                    "focused": { "Color": "#00FF00" },
+                    "pressed": { "Color": "#0000FF" }
+                },
+                "off": {
+                    "disabled": { "Color": "#808080" },
+                    "normal": { "Color": "#FF0000" },
+                    "focused": { "Color": "#00FF00" },
+                    "pressed": { "Color": "#0000FF" }
+                }
+            },
             "Name": null
         }
     }
@@ -62,6 +76,7 @@ fn de() {
     world.register::<Style>();
     world.register::<ButtonStyle>();
     world.register::<ToggleButtonStyle>();
+    world.register::<RadioButtonStyle>();
     world.register::<Name>();
     registry.register_with_deserialize::<Name>("Name");
 

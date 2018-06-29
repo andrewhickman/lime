@@ -8,7 +8,9 @@ use widget::button::{
     ToggleButtonStyle,
 };
 
+#[derive(Component, Deserialize)]
 pub struct RadioButtonStyle {
+    #[serde(flatten)]
     pub style: ToggleButtonStyle,
 }
 

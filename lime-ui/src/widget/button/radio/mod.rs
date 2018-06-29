@@ -1,3 +1,4 @@
+mod de;
 mod style;
 mod sys;
 
@@ -15,11 +16,21 @@ impl RadioButton {
     pub fn new(group: Entity) -> Self {
         RadioButton { group }
     }
+
+    pub fn group(&self) -> Entity {
+        self.group
+    }
 }
 
 #[derive(Clone, Debug)]
 pub struct RadioButtonGroup {
     entities: Vec<Entity>,
+}
+
+impl RadioButtonGroup {
+    pub fn entities(&self) -> &[Entity] {
+        &self.entities
+    }
 }
 
 impl RadioButtonGroup {
