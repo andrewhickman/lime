@@ -10,6 +10,7 @@ mod common;
 
 use cassowary::strength::*;
 use render::Color;
+use specs::prelude::*;
 use ui::draw::Brush;
 use ui::layout::Position;
 use ui::tree::{Node, Root};

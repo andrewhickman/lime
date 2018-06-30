@@ -12,6 +12,7 @@ mod common;
 use cassowary::strength::*;
 use render::Color;
 use shrev::EventChannel;
+use specs::prelude::*;
 use ui::draw::{Brush, Style};
 use ui::layout::Position;
 use ui::tree::{Node, Root};
