@@ -5,7 +5,7 @@ use erased_serde as erased;
 use serde::de as serde;
 use shrev::EventChannel;
 use specs::prelude::*;
-use specs_mirror::{Mirrored, MirroredStorage};
+use specs_mirror::{Mirrored, MirroredStorage, StorageMutExt};
 
 use de::{DeserializeAndInsert, Seed};
 
@@ -114,8 +114,14 @@ impl DeserializeAndInsert for State {
         }
 
         let state: StateDe = serde::Deserialize::deserialize(deserializer)?;
+        let mut storage = WriteStorage::<State>::fetch(seed.res);
         let flags = StateFlags { bits: state as u8 };
-        let res = WriteStorage::fetch(seed.res).insert(seed.entity, State { flags });
+        let res = storage.insert(seed.entity, State { flags });
+        storage.event_channel().single_write(StateEvent {
+            entity: seed.entity,
+            changed: !flags,
+            flags,
+        });
         if res.unwrap().is_some() {
             Err(serde::Error::custom(format!(
                 "visibility defined twice for entity '{}'",
