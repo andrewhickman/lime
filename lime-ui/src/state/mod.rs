@@ -30,7 +30,7 @@ pub struct StateEvent {
 }
 
 impl State {
-    pub fn needs_events(&mut self) -> bool {
+    pub fn needs_events(&self) -> bool {
         self.flags.contains(StateFlags::NEEDS_EVENTS)
     }
 

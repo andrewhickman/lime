@@ -44,11 +44,14 @@ fn create_rect(
         .with(cons)
 }
 
-fn run_window_event(world: &mut World, event: WindowEvent) {
-    EventSystem(&winit::Event::WindowEvent {
-        event,
-        window_id: unsafe { mem::zeroed() },
-    }).run_now(&world.res)
+fn run_window_event(world: &mut World, dispatcher: &mut Dispatcher, event: WindowEvent) {
+    world
+        .write_resource::<EventChannel<winit::Event>>()
+        .single_write(winit::Event::WindowEvent {
+            event,
+            window_id: unsafe { mem::zeroed() },
+        });
+    dispatcher.dispatch(&world.res);
 }
 
 fn find_mouse_event(events: &[Event], entity: Entity, event: MouseEvent) -> bool {
@@ -60,6 +63,7 @@ fn find_mouse_event(events: &[Event], entity: Entity, event: MouseEvent) -> bool
 
 fn assert_mouse_focus(
     world: &mut World,
+    dispatcher: &mut Dispatcher,
     reader: &mut ReaderId<Event>,
     old: Option<Entity>,
     new: Option<Entity>,
@@ -67,6 +71,7 @@ fn assert_mouse_focus(
 ) {
     run_window_event(
         world,
+        dispatcher,
         WindowEvent::CursorMoved {
             position: (x, y),
             modifiers: ModifiersState::default(),
@@ -128,18 +133,109 @@ fn mouse_focus() {
 
     dispatcher.dispatch(&world.res);
 
-    assert_mouse_focus(&mut world, &mut rdr, None, Some(r1), (250.0, 250.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(r1), Some(r1), (750.0, 250.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(r1), Some(root), (1250.0, 250.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(root), Some(r1), (250.0, 250.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(r1), Some(r2), (750.0, 750.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(r2), Some(r2), (1250.0, 1250.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(r2), Some(root), (250.0, 1250.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(root), Some(r2), (750.0, 1250.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(r2), Some(r2), (1250.0, 1250.0));
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        None,
+        Some(r1),
+        (250.0, 250.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(r1),
+        Some(r1),
+        (750.0, 250.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(r1),
+        Some(root),
+        (1250.0, 250.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(root),
+        Some(r1),
+        (250.0, 250.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(r1),
+        Some(r2),
+        (750.0, 750.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(r2),
+        Some(r2),
+        (1250.0, 1250.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(r2),
+        Some(root),
+        (250.0, 1250.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(root),
+        Some(r2),
+        (750.0, 1250.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(r2),
+        Some(r2),
+        (1250.0, 1250.0),
+    );
 
-    assert_mouse_focus(&mut world, &mut rdr, Some(r2), Some(r1), (0.0, 0.0));
-    assert_mouse_focus(&mut world, &mut rdr, Some(r1), None, (1500.0, 0.0));
-    assert_mouse_focus(&mut world, &mut rdr, None, None, (0.0, 1500.0));
-    assert_mouse_focus(&mut world, &mut rdr, None, None, (1500.0, 1500.0));
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(r2),
+        Some(r1),
+        (0.0, 0.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        Some(r1),
+        None,
+        (1500.0, 0.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        None,
+        None,
+        (0.0, 1500.0),
+    );
+    assert_mouse_focus(
+        &mut world,
+        &mut dispatcher,
+        &mut rdr,
+        None,
+        None,
+        (1500.0, 1500.0),
+    );
 }

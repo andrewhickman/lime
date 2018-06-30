@@ -4,6 +4,7 @@ use winit::{ElementState, ModifiersState, MouseButton};
 
 use layout::Position;
 use tree::{self, Node};
+use State;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum MouseEvent {
@@ -17,11 +18,15 @@ pub enum MouseEvent {
 
 pub struct MouseFocus {
     pub(in event) entity: Option<Entity>,
+    pub(in event) point: Point,
 }
 
 impl MouseFocus {
     pub(crate) fn new() -> Self {
-        MouseFocus { entity: None }
+        MouseFocus {
+            entity: None,
+            point: Point::origin(),
+        }
     }
 
     pub fn entity(&self) -> Option<Entity> {
@@ -47,6 +52,7 @@ pub(in event) fn hit_test(
     point: Point,
     nodes: &ReadStorage<Node>,
     poss: &ReadStorage<Position>,
+    _states: &ReadStorage<State>, // TODO
 ) -> Option<Entity> {
     tree::walk_sc_rev(root, nodes, &mut |ent| {
         if let Some(pos) = poss.get(ent) {

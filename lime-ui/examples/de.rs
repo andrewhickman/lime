@@ -5,6 +5,7 @@ extern crate lime_ui as ui;
 extern crate lime_utils as utils;
 extern crate serde;
 extern crate serde_json as json;
+extern crate shrev;
 extern crate specs;
 extern crate winit;
 
@@ -13,10 +14,10 @@ mod common;
 
 use std::panic;
 
+use shrev::EventChannel;
 use specs::prelude::*;
 use ui::de::{deserialize, Registry};
 use ui::draw::DrawUi;
-use ui::event::EventSystem;
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 use common::D3;
@@ -152,7 +153,7 @@ fn main() {
                     event: WindowEvent::Closed,
                     ..
                 } => quit = true,
-                ev => EventSystem(&ev).run_now(&world.res),
+                ev => world.write_resource::<EventChannel<_>>().single_write(ev),
             };
         });
 

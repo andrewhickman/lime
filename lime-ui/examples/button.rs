@@ -3,6 +3,7 @@ extern crate env_logger;
 extern crate lime_render as render;
 extern crate lime_ui as ui;
 extern crate lime_utils as utils;
+extern crate shrev;
 extern crate specs;
 extern crate winit;
 
@@ -10,7 +11,6 @@ mod common;
 
 use cassowary::strength::*;
 use render::Color;
-use specs::prelude::*;
 use ui::draw::{Brush, Style};
 use ui::event::EventSystem;
 use ui::layout::Position;
@@ -58,7 +58,7 @@ fn main() {
                     event: WindowEvent::Closed,
                     ..
                 } => quit = true,
-                ev => EventSystem(&ev).run_now(&world.res),
+                ev => world.write_resource::<EventChannel<_>>().single_write(ev),
             };
         });
 
