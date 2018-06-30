@@ -3,7 +3,7 @@ use specs::prelude::*;
 use specs_mirror::StorageMutExt;
 use winit::MouseButton;
 
-use event::{Event, EventKind, MouseEvent};
+use event::{Event, EventKind, EventSystem, MouseEvent};
 use widget::button::{Button, ButtonState};
 
 pub struct ButtonSystem {
@@ -17,7 +17,11 @@ impl ButtonSystem {
         let reader = world
             .write_resource::<EventChannel<Event>>()
             .register_reader();
-        dispatcher.add(ButtonSystem { reader }, ButtonSystem::NAME, &[]);
+        dispatcher.add(
+            ButtonSystem { reader },
+            ButtonSystem::NAME,
+            &[EventSystem::NAME],
+        );
     }
 }
 

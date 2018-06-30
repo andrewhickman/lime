@@ -11,8 +11,8 @@ mod common;
 
 use cassowary::strength::*;
 use render::Color;
+use shrev::EventChannel;
 use ui::draw::{Brush, Style};
-use ui::event::EventSystem;
 use ui::layout::Position;
 use ui::tree::{Node, Root};
 use ui::widget::button::{Button, ButtonStyle};

@@ -21,7 +21,7 @@ fn walk_order() {
     let n2 = Node::with_parent(world.create_entity().with(Data(2)), n1).build();
     let _n3 = Node::with_parent(world.create_entity().with(Data(3)), n2).build();
     let n4 = Node::with_parent(world.create_entity().with(Data(4)), n2).build();
-    let _n5 = Node::with_parent(world.create_entity().with(Data(5)), n4).build();
+    let n5 = Node::with_parent(world.create_entity().with(Data(5)), n4).build();
     let _n6 = Node::with_parent(world.create_entity().with(Data(6)), n1).build();
     let n7 = Node::with_parent(world.create_entity().with(Data(7)), n1).build();
     let _n8 = Node::with_parent(world.create_entity().with(Data(8)), n7).build();
@@ -35,14 +35,40 @@ fn walk_order() {
 
     let comps = world.read_storage::<Data>();
     let mut expected = 0..16;
-    walk(n0, &world.read_storage::<Node>(), |ent| {
-        assert_eq!(comps.get(ent).unwrap().0, expected.next().unwrap());
-    });
+    walk::<(), _, _>(
+        n0,
+        &world.read_storage::<Node>(),
+        &mut |ent| {
+            assert_eq!(comps.get(ent).unwrap().0, expected.next().unwrap());
+            WalkPreResult::Continue
+        },
+        &mut |_| WalkPostResult::Continue,
+    );
 
     let mut expected_rev = (0..16).rev();
-    walk_rev(n0, &world.read_storage::<Node>(), |ent| {
-        assert_eq!(comps.get(ent).unwrap().0, expected_rev.next().unwrap());
-    });
+    walk_rev::<(), _, _>(
+        n0,
+        &world.read_storage::<Node>(),
+        &mut |_| WalkPreResult::Continue,
+        &mut |ent| {
+            assert_eq!(comps.get(ent).unwrap().0, expected_rev.next().unwrap());
+            WalkPostResult::Continue
+        },
+    );
+
+    assert_eq!(
+        walk(
+            n0,
+            &world.read_storage::<Node>(),
+            &mut |ent| if comps.get(ent).unwrap().0 == 5 {
+                WalkPreResult::Break(ent)
+            } else {
+                WalkPreResult::Continue
+            },
+            &mut |_| WalkPostResult::Continue,
+        ),
+        Some(n5)
+    );
 }
 
 #[test]
@@ -113,14 +139,26 @@ fn de() {
     let data = world.read_storage::<Data>();
     let root = world.read_resource::<Root>().entity();
     let mut expected = 0..=9;
-    walk(root, &world.read_storage::<Node>(), |ent| {
-        assert_eq!(data.get(ent).unwrap().0, expected.next().unwrap());
-    });
+    walk::<(), _, _>(
+        root,
+        &world.read_storage::<Node>(),
+        &mut |ent| {
+            assert_eq!(data.get(ent).unwrap().0, expected.next().unwrap());
+            WalkPreResult::Continue
+        },
+        &mut |_| WalkPostResult::Continue,
+    );
 
     let mut expected_rev = (0..=9).rev();
-    walk_rev(root, &world.read_storage::<Node>(), |ent| {
-        assert_eq!(data.get(ent).unwrap().0, expected_rev.next().unwrap());
-    });
+    walk_rev::<(), _, _>(
+        root,
+        &world.read_storage::<Node>(),
+        &mut |_| WalkPreResult::Continue,
+        &mut |ent| {
+            assert_eq!(data.get(ent).unwrap().0, expected_rev.next().unwrap());
+            WalkPostResult::Continue
+        },
+    );
 }
 
 #[test]

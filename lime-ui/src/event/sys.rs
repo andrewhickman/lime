@@ -79,10 +79,14 @@ fn cursor_update(
 
     if hover.entity != entity {
         if let Some(old) = hover.entity {
-            events.single_write(Event::mouse(old, MouseEvent::Exit));
+            if states.get(old).map(State::needs_events).unwrap_or(true) {
+                events.single_write(Event::mouse(old, MouseEvent::Exit));
+            }
         }
         if let Some(new) = entity {
-            events.single_write(Event::mouse(new, MouseEvent::Enter));
+            if states.get(new).map(State::needs_events).unwrap_or(true) {
+                events.single_write(Event::mouse(new, MouseEvent::Enter));
+            }
         }
         hover.entity = entity;
     }
@@ -101,13 +105,21 @@ fn cursor_moved(
     hover.point = Point(x as f32, y as f32);
     cursor_update(root, hover, events, nodes, poss, states);
     if let Some(ent) = hover.entity {
-        events.single_write(Event::mouse(ent, MouseEvent::Move(hover.point, modifiers)));
+        if states.get(ent).map(State::needs_events).unwrap_or(true) {
+            events.single_write(Event::mouse(ent, MouseEvent::Move(hover.point, modifiers)));
+        }
     }
 }
 
-fn cursor_left(hover: &mut MouseFocus, events: &mut EventChannel<Event>) {
+fn cursor_left(
+    hover: &mut MouseFocus,
+    events: &mut EventChannel<Event>,
+    states: &ReadStorage<State>,
+) {
     if let Some(ent) = hover.entity {
-        events.single_write(Event::mouse(ent, MouseEvent::Exit));
+        if states.get(ent).map(State::needs_events).unwrap_or(true) {
+            events.single_write(Event::mouse(ent, MouseEvent::Exit));
+        }
     }
     hover.entity = None;
 }
@@ -182,7 +194,7 @@ impl<'a> System<'a> for EventSystem {
                             &states,
                         );
                     }
-                    WindowEvent::CursorLeft { .. } => cursor_left(&mut hover, &mut events),
+                    WindowEvent::CursorLeft { .. } => cursor_left(&mut hover, &mut events, &states),
                     WindowEvent::MouseInput {
                         state,
                         button,

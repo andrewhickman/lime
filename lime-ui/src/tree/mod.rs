@@ -35,50 +35,86 @@ impl Node {
             children: Vec::new(),
         }
     }
+
+    pub fn parent(&self) -> Option<Entity> {
+        self.parent
+    }
+
+    pub fn children(&self) -> &[Entity] {
+        &self.children
+    }
 }
 
-pub fn walk<F>(cur: Entity, nodes: &ReadStorage<Node>, mut visit: F)
-where
-    F: FnMut(Entity),
-{
-    walk_sc::<(), _>(cur, nodes, &mut |ent| Ok(visit(ent))).unwrap()
+pub enum WalkPreResult<T> {
+    Continue,
+    Skip,
+    Break(T),
 }
 
-pub fn walk_sc<E, F>(cur: Entity, nodes: &ReadStorage<Node>, visit: &mut F) -> Result<(), E>
+pub enum WalkPostResult<T> {
+    Continue,
+    Break(T),
+}
+
+pub fn walk<T, F, G>(cur: Entity, nodes: &ReadStorage<Node>, pre: &mut F, post: &mut G) -> Option<T>
 where
-    F: FnMut(Entity) -> Result<(), E>,
+    F: FnMut(Entity) -> WalkPreResult<T>,
+    G: FnMut(Entity) -> WalkPostResult<T>,
 {
     if let Some(node) = nodes.get(cur) {
-        visit(cur)?;
-        for &ent in &node.children {
-            walk_sc(ent, nodes, visit)?;
+        match pre(cur) {
+            WalkPreResult::Continue => (),
+            WalkPreResult::Skip => return None,
+            WalkPreResult::Break(val) => return Some(val),
+        }
+
+        for &ent in node.children().iter() {
+            if let Some(val) = walk(ent, nodes, pre, post) {
+                return Some(val);
+            }
+        }
+
+        match post(cur) {
+            WalkPostResult::Continue => None,
+            WalkPostResult::Break(val) => Some(val),
         }
     } else {
         error!("Dead node in tree: {:?}.", cur);
+        None
     }
-    Ok(())
 }
 
-pub fn walk_rev<F>(cur: Entity, nodes: &ReadStorage<Node>, mut visit: F)
+pub fn walk_rev<T, F, G>(
+    cur: Entity,
+    nodes: &ReadStorage<Node>,
+    pre: &mut F,
+    post: &mut G,
+) -> Option<T>
 where
-    F: FnMut(Entity),
-{
-    walk_sc_rev::<(), _>(cur, nodes, &mut |ent| Ok(visit(ent))).unwrap()
-}
-
-pub fn walk_sc_rev<E, F>(cur: Entity, nodes: &ReadStorage<Node>, visit: &mut F) -> Result<(), E>
-where
-    F: FnMut(Entity) -> Result<(), E>,
+    F: FnMut(Entity) -> WalkPreResult<T>,
+    G: FnMut(Entity) -> WalkPostResult<T>,
 {
     if let Some(node) = nodes.get(cur) {
-        for &ent in node.children.iter().rev() {
-            walk_sc_rev(ent, nodes, visit)?;
+        match pre(cur) {
+            WalkPreResult::Continue => (),
+            WalkPreResult::Skip => return None,
+            WalkPreResult::Break(val) => return Some(val),
         }
-        visit(cur)?;
+
+        for &ent in node.children().iter().rev() {
+            if let Some(val) = walk_rev(ent, nodes, pre, post) {
+                return Some(val);
+            }
+        }
+
+        match post(cur) {
+            WalkPostResult::Continue => None,
+            WalkPostResult::Break(val) => Some(val),
+        }
     } else {
         error!("Dead node in tree: {:?}.", cur);
+        None
     }
-    Ok(())
 }
 
 #[derive(Copy, Clone, Debug)]

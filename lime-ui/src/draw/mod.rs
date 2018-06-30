@@ -7,7 +7,7 @@ use render::Color;
 use specs::prelude::*;
 
 use layout::Position;
-use tree::{self, Node, Root};
+use tree::{self, Node, Root, WalkPostResult, WalkPreResult};
 use State;
 
 #[derive(Clone, Component, Debug, Deserialize)]
@@ -35,15 +35,21 @@ type Data<'a> = (
 impl Draw for DrawUi {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
         let (root, nodes, brushes, states) = Data::fetch(res);
-        tree::walk(root.entity(), &nodes, |ent| {
-            if states.get(ent).map(State::needs_draw).unwrap_or(true) {
-                if let Some(brush) = brushes.get(ent) {
-                    match *brush {
-                        Brush::Color(color) => draw_color(ent, color, res, visitor),
+        tree::walk::<(), _, _>(
+            root.entity(),
+            &nodes,
+            &mut |ent| {
+                if states.get(ent).map(State::needs_draw).unwrap_or(true) {
+                    if let Some(brush) = brushes.get(ent) {
+                        match *brush {
+                            Brush::Color(color) => draw_color(ent, color, res, visitor),
+                        }
                     }
                 }
-            }
-        });
+                WalkPreResult::Continue
+            },
+            &mut |_| WalkPostResult::Continue,
+        );
     }
 }
 

@@ -3,7 +3,7 @@ use specs::prelude::*;
 use winit::{ElementState, ModifiersState, MouseButton};
 
 use layout::Position;
-use tree::{self, Node};
+use tree::{self, Node, WalkPostResult, WalkPreResult};
 use State;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -52,14 +52,16 @@ pub(in event) fn hit_test(
     point: Point,
     nodes: &ReadStorage<Node>,
     poss: &ReadStorage<Position>,
-    _states: &ReadStorage<State>, // TODO
+    states: &ReadStorage<State>,
 ) -> Option<Entity> {
-    tree::walk_sc_rev(root, nodes, &mut |ent| {
-        if let Some(pos) = poss.get(ent) {
-            if pos.contains(point) {
-                return Err(ent);
+    tree::walk_rev::<Entity, _, _>(root, nodes, &mut |_| WalkPreResult::Continue, &mut |ent| {
+        if states.get(ent).map(State::needs_draw).unwrap_or(true) {
+            if let Some(pos) = poss.get(ent) {
+                if pos.contains(point) {
+                    return WalkPostResult::Break(ent);
+                }
             }
         }
-        Ok(())
-    }).err()
+        WalkPostResult::Continue
+    })
 }
