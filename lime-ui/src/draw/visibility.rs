@@ -1,3 +1,7 @@
+// Needs Layout
+// Visible => Needs Layout
+// Interaction => Visible
+
 use std::mem;
 
 use erased_serde as erased;

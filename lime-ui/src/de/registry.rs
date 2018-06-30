@@ -58,12 +58,12 @@ impl Registry {
             map: FnvHashMap::with_capacity_and_hasher(4, Default::default()),
         };
 
+        reg.register_with_deserialize_and_insert::<State>("State");
         reg.register_with_deserialize_and_insert::<layout::Constraints>("Constraints");
         reg.register_with_deserialize_and_insert::<layout::Position>("Position");
         reg.register_with_deserialize::<tree::Node>("Children");
         reg.register::<draw::Brush>("Brush");
         reg.register_with_deserialize_and_insert::<draw::Style>("Style");
-        reg.register_with_deserialize_and_insert::<draw::Visibility>("Visibility");
         reg.register::<widget::button::Button>("Button");
         reg.register::<widget::button::ButtonStyle>("ButtonStyle");
         reg.register::<widget::button::ToggleButton>("ToggleButton");

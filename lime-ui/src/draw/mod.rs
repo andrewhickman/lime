@@ -1,8 +1,6 @@
 mod style;
-mod visibility;
 
 pub use self::style::{Style, StyleEvent};
-pub use self::visibility::{Visibility, VisibilityEvent, VisibilityState};
 
 use render::d2::{Draw, Point};
 use render::Color;
@@ -10,6 +8,7 @@ use specs::prelude::*;
 
 use layout::Position;
 use tree::{self, Node, Root};
+use State;
 
 #[derive(Clone, Component, Debug, Deserialize)]
 pub enum Brush {
@@ -30,14 +29,14 @@ type Data<'a> = (
     ReadExpect<'a, Root>,
     ReadStorage<'a, Node>,
     ReadStorage<'a, Brush>,
-    ReadStorage<'a, Visibility>,
+    ReadStorage<'a, State>,
 );
 
 impl Draw for DrawUi {
     fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
-        let (root, nodes, brushes, viss) = Data::fetch(res);
+        let (root, nodes, brushes, states) = Data::fetch(res);
         tree::walk(root.entity(), &nodes, |ent| {
-            if viss.get(ent).map(Visibility::needs_draw).unwrap_or(true) {
+            if states.get(ent).map(State::needs_draw).unwrap_or(true) {
                 if let Some(brush) = brushes.get(ent) {
                     match *brush {
                         Brush::Color(color) => draw_color(ent, color, res, visitor),

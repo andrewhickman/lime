@@ -8,6 +8,7 @@ documentation = "https://docs.rs/lime-ui/"
 license = "MIT/Apache-2.0"
 
 [dependencies]
+bitflags = "1.0.3"
 cassowary = { git = "https://github.com/dylanede/cassowary-rs" } 
 erased-serde = "0.3.3"
 fnv = "1"

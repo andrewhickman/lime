@@ -8,16 +8,16 @@ use specs::prelude::*;
 use specs_mirror::{StorageExt, StorageMutExt};
 use utils::throw;
 
-use draw::{Visibility, VisibilityEvent};
 use layout::cons::{ConstraintUpdate, ConstraintsStorage};
 use layout::{Constraints, Position};
 use tree::Root;
+use {State, StateEvent};
 
 pub struct LayoutSystem {
     solver: Solver,
     changes: FnvHashMap<Variable, f64>,
     dims_rx: ReaderId<ScreenDimensions>,
-    vis_rx: ReaderId<VisibilityEvent>,
+    state_rx: ReaderId<StateEvent>,
     width: Variable,
     height: Variable,
 }
@@ -30,7 +30,7 @@ impl LayoutSystem {
         let root = world.read_resource::<Root>();
         let mut poss = world.write_storage::<Position>();
         let mut dims_tx = world.write_resource::<EventChannel<ScreenDimensions>>();
-        let vis_rx = world.write_storage::<Visibility>().register_reader();
+        let state_rx = world.write_storage::<State>().register_reader();
 
         let mut solver = Solver::new();
 
@@ -54,7 +54,7 @@ impl LayoutSystem {
             solver,
             changes: FnvHashMap::default(),
             dims_rx: dims_tx.register_reader(),
-            vis_rx,
+            state_rx,
             width,
             height,
         };
@@ -102,10 +102,10 @@ impl<'a> System<'a> for LayoutSystem {
         ReadExpect<'a, EventChannel<ScreenDimensions>>,
         WriteStorage<'a, Constraints>,
         WriteStorage<'a, Position>,
-        ReadStorage<'a, Visibility>,
+        ReadStorage<'a, State>,
     );
 
-    fn run(&mut self, (dims_tx, mut cons, mut poss, viss): Self::SystemData) {
+    fn run(&mut self, (dims_tx, mut cons, mut poss, states): Self::SystemData) {
         let resize = dims_tx.read(&mut self.dims_rx).last().cloned();
         if let Some(dims) = resize {
             trace!("Resizing ui to '({}, {})'.", dims.width(), dims.height());
@@ -115,9 +115,9 @@ impl<'a> System<'a> for LayoutSystem {
             self.resize(height, dims.height());
         }
 
-        for vis_ev in viss.read_events(&mut self.vis_rx) {
-            if let Some(needs_layout) = vis_ev.needs_layout_changed() {
-                if let Some(con) = cons.get_mut(vis_ev.entity) {
+        for state_ev in states.read_events(&mut self.state_rx) {
+            if let Some(needs_layout) = state_ev.needs_layout_changed() {
+                if let Some(con) = cons.get_mut(state_ev.entity) {
                     if needs_layout {
                         con.expand();
                     } else {

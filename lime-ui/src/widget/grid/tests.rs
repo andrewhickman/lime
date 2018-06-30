@@ -9,10 +9,10 @@ use specs::prelude::*;
 use specs_mirror::StorageMutExt;
 
 use super::*;
-use draw::{Visibility, VisibilityState};
 use layout::{Constraints, ConstraintsBuilder, Position};
 use tests::init_test;
 use tree::{Node, Root};
+use State;
 
 fn create_root_grid(
     world: &mut World,
@@ -386,14 +386,14 @@ fn size() {
     }
 }
 
-fn set_visibility(world: &mut World, entity: Entity, state: VisibilityState) {
-    let mut storage = world.write_storage::<Visibility>();
-    let (vis, chan) = storage.modify(entity).unwrap();
-    vis.set(entity, state, chan);
+fn set_needs_layout(world: &mut World, entity: Entity, value: bool) {
+    let mut storage = world.write_storage::<State>();
+    let (state, chan) = storage.modify(entity).unwrap();
+    state.set_needs_layout(entity, value, chan);
 }
 
 #[test]
-fn visibility() {
+fn state() {
     let (mut world, mut dispatcher) = init_test([1000, 750].into());
 
     let grid = create_grid(&mut world, vec![Size::Auto], vec![Size::Auto]);
@@ -411,7 +411,7 @@ fn visibility() {
     let node = Node::with_parent(world.create_entity(), grid)
         .with(pos)
         .with(cons)
-        .with(Visibility::new())
+        .with(State::default())
         .build();
 
     dispatcher.dispatch(&world.res);
@@ -423,7 +423,7 @@ fn visibility() {
         assert_ulps_eq!(g.height(), 750.0);
     }
 
-    set_visibility(&mut world, node, VisibilityState::Collapsed);
+    set_needs_layout(&mut world, node, false);
     dispatcher.dispatch(&world.res);
 
     {
@@ -433,7 +433,7 @@ fn visibility() {
         assert_ulps_eq!(g.height(), 0.0);
     }
 
-    set_visibility(&mut world, node, VisibilityState::Visible);
+    set_needs_layout(&mut world, node, true);
     dispatcher.dispatch(&world.res);
 
     {

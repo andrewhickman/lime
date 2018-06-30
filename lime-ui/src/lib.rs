@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate bitflags;
 extern crate cassowary;
 extern crate erased_serde;
 extern crate fnv;
@@ -31,19 +33,22 @@ pub mod layout;
 pub mod tree;
 pub mod widget;
 
+mod state;
 #[cfg(test)]
 mod tests;
+
+pub use state::{State, StateEvent};
 
 use shrev::EventChannel;
 use specs::DispatcherBuilder;
 use specs::World;
 
 pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
+    world.register::<State>();
     world.register::<layout::Constraints>();
     world.register::<layout::Position>();
     world.register::<tree::Node>();
     world.register::<draw::Brush>();
-    world.register::<draw::Visibility>();
     world.register::<draw::Style>();
     world.register::<widget::button::Button>();
     world.register::<widget::button::ButtonStyle>();
