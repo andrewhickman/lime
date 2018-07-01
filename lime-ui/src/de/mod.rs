@@ -1,8 +1,7 @@
-#[cfg(test)]
-pub mod tests;
-
 mod registry;
 mod seed;
+#[cfg(test)]
+mod tests;
 
 pub use self::registry::{Deserialize, DeserializeAndInsert, Insert, Registry};
 pub use self::seed::{ComponentSeed, Seed};
@@ -27,10 +26,21 @@ pub fn deserialize<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
-    let mut names = FnvHashMap::default();
+    deserialize_with_names(deserializer, reg, res, &mut FnvHashMap::default())
+}
+
+pub fn deserialize_with_names<'de, D>(
+    deserializer: D,
+    reg: &Registry,
+    res: &mut Resources,
+    names: &mut FnvHashMap<Cow<'de, str>, Entity>,
+) -> Result<(), D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
     let root = res.fetch::<Root>().entity();
     names.insert(Cow::Borrowed("root"), root);
-    serde::DeserializeSeed::deserialize(UiSeed::new(reg, res, &mut names), deserializer)
+    serde::DeserializeSeed::deserialize(UiSeed::new(reg, res, names), deserializer)
 }
 
 #[derive(Debug)]

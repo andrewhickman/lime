@@ -7,27 +7,6 @@ use specs::prelude::*;
 
 use super::*;
 
-#[derive(Component)]
-pub struct Name(String);
-
-impl Deserialize for Name {
-    fn deserialize<'de, 'a>(
-        seed: Seed<'de, 'a>,
-        deserializer: &mut erased::Deserializer<'de>,
-    ) -> Result<Self, erased::Error> {
-        let this = seed.entity;
-        <() as serde::Deserialize>::deserialize(deserializer)?;
-        Ok(Name(seed.get_name(this).to_owned()))
-    }
-}
-
-pub fn name_map(world: &mut World) -> FnvHashMap<String, Entity> {
-    (&world.read_storage::<Name>(), &*world.entities())
-        .join()
-        .map(|(name, entity)| (name.0.clone(), entity))
-        .collect()
-}
-
 #[test]
 fn de() {
     const DATA: &'static str = r#"
@@ -37,19 +16,16 @@ fn de() {
             "comp2": {
                 "value": 52,
                 "name": "hello"
-            },
-            "Name": null
+            }
         },
         "ent2": {
-            "comp1": 6,
-            "Name": null
+            "comp1": 6
         },
         "ent3": {
             "comp2": {
                 "value": -45,
                 "name": "world"
-            },
-            "Name": null
+            }
         }
     }
     "#;
@@ -69,18 +45,17 @@ fn de() {
     registry.register::<Comp1>("comp1");
     world.register::<Comp2>();
     registry.register::<Comp2>("comp2");
-    world.register::<Name>();
-    registry.register_with_deserialize::<Name>("Name");
+
+    let mut name_map = FnvHashMap::default();
 
     Root::create(&mut world);
-    deserialize(
+    deserialize_with_names(
         &mut json::Deserializer::from_str(DATA),
         &registry,
         &mut world.res,
+        &mut name_map,
     ).unwrap();
     world.maintain();
-
-    let name_map = name_map(&mut world);
 
     let ents: Vec<Entity> = (&*world.entities()).join().collect();
     assert_eq!(ents.len(), 3);
@@ -116,20 +91,16 @@ fn name() {
     {
         "root": {
             "comp1": 5,
-            "comp2": "ent2",
-            "Name": null
+            "comp2": "ent2"
         },
         "ent2": {
-            "comp1": 6,
-            "Name": null
+            "comp1": 6
         },
         "ent3": {
-            "comp2": "ent2",
-            "Name": null
+            "comp2": "ent2"
         },
         "ent4": {
-            "comp2": "root",
-            "Name": null
+            "comp2": "root"
         }
     }
     "#;
@@ -163,28 +134,27 @@ fn name() {
     world_str.register::<Comp2>();
     world_rdr.register::<Comp2>();
     registry.register_with_deserialize::<Comp2>("comp2");
-    world_str.register::<Name>();
-    world_rdr.register::<Name>();
-    registry.register_with_deserialize::<Name>("Name");
 
     Root::create(&mut world_str);
     Root::create(&mut world_rdr);
-    deserialize(
+    let mut names_str = FnvHashMap::default();
+    let mut names_rdr = FnvHashMap::default();
+    deserialize_with_names(
         &mut json::Deserializer::from_str(DATA),
         &registry,
         &mut world_str.res,
+        &mut names_str,
     ).unwrap();
-    deserialize(
+    deserialize_with_names(
         &mut json::Deserializer::from_reader(Cursor::new(DATA)),
         &registry,
         &mut world_rdr.res,
+        &mut names_rdr,
     ).unwrap();
     world_str.maintain();
     world_rdr.maintain();
 
-    for mut world in vec![world_str, world_rdr] {
-        let name_map = name_map(&mut world);
-
+    for (mut world, name_map) in vec![(world_str, names_str), (world_rdr, names_rdr)] {
         let ents: Vec<Entity> = (&*world.entities()).join().collect();
         assert_eq!(ents.len(), 4);
 

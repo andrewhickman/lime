@@ -1,10 +1,10 @@
+use fnv::FnvHashMap;
 use render::Color;
 use serde_json as json;
 use specs::prelude::*;
 
 use super::*;
 use de;
-use de::tests::{name_map, Name};
 use draw::Brush;
 use tree::Root;
 use widget::button::{ButtonStyle, RadioButtonStyle, ToggleButtonStyle};
@@ -20,15 +20,13 @@ fn de() {
             "Style": {
                 "style": "style1",
                 "ty": "ButtonStyle"
-            },
-            "Name": null
+            }
         },
         "ent2": {
             "Style": {
                 "style": "style1",
                 "ty": "ToggleButtonStyle"
-            },
-            "Name": null
+            }
         },
         "style1": {
             "ButtonStyle": {
@@ -64,31 +62,29 @@ fn de() {
                     "focused": { "Color": "#00FF00" },
                     "pressed": { "Color": "#0000FF" }
                 }
-            },
-            "Name": null
+            }
         }
     }
     "##;
 
     let mut world = World::new();
-    let mut registry = de::Registry::new();
+    let registry = de::Registry::new();
     world.register::<Brush>();
     world.register::<Style>();
     world.register::<ButtonStyle>();
     world.register::<ToggleButtonStyle>();
     world.register::<RadioButtonStyle>();
-    world.register::<Name>();
-    registry.register_with_deserialize::<Name>("Name");
+
+    let mut name_map = FnvHashMap::default();
 
     Root::create(&mut world);
-    de::deserialize(
+    de::deserialize_with_names(
         &mut json::Deserializer::from_str(DATA),
         &registry,
         &mut world.res,
+        &mut name_map,
     ).unwrap();
     world.maintain();
-
-    let name_map = name_map(&mut world);
 
     let ents: Vec<Entity> = (&*world.entities()).join().collect();
     assert_eq!(ents.len(), 3);
