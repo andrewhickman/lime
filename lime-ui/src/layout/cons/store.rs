@@ -3,7 +3,7 @@ use specs::prelude::*;
 use specs::storage::UnprotectedStorage;
 use specs::world::Index;
 
-use super::{ConstraintUpdate, Constraints};
+use layout::cons::{ConstraintUpdate, Constraints};
 
 #[derive(Default)]
 pub struct ConstraintsStorage {
