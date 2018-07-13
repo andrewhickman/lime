@@ -2,11 +2,9 @@ mod geom;
 
 pub use self::geom::Point;
 
-use std::ops::Deref;
 use std::sync::Arc;
 
 use failure;
-use specs::shred::Resources;
 use utils::throw;
 use vulkano::buffer::{BufferUsage, CpuBufferPool};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
@@ -19,20 +17,6 @@ use vulkano::pipeline::GraphicsPipeline;
 
 use Color;
 
-pub trait Draw: 'static {
-    fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color));
-}
-
-impl<T: ?Sized + 'static> Draw for T
-where
-    T: Deref,
-    T::Target: Draw,
-{
-    fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
-        self.deref().draw(res, visitor)
-    }
-}
-
 type Pipeline = Arc<
     GraphicsPipeline<
         SingleBufferDefinition<Vertex>,
@@ -41,11 +25,12 @@ type Pipeline = Arc<
     >,
 >;
 
-pub(crate) struct Renderer {
+pub struct Renderer {
     vbuf: CpuBufferPool<Vertex>,
     ubuf: CpuBufferPool<vs::ty::Data>,
     pipe: Pipeline,
     pool: FixedSizeDescriptorSetsPool<Pipeline>,
+    queued: Vec<Vertex>,
 }
 
 impl Renderer {
@@ -85,28 +70,28 @@ impl Renderer {
             vbuf,
             ubuf,
             pool,
+            queued: Vec::new(),
         }
     }
 
-    pub(crate) fn draw<D: Draw>(
+    pub(crate) fn draw(
         &mut self,
-        res: &Resources,
         cmd: AutoCommandBufferBuilder,
-        draw: &D,
         state: DynamicState,
     ) -> Result<AutoCommandBufferBuilder, failure::Error> {
-        let mut vbuf = Vec::new();
-        draw.draw(res, &mut |vertices, color| {
-            debug_assert!(vertices.len() % 3 == 0);
-            vbuf.extend(vertices.iter().map(|&v| Vertex::new(v, color)));
-        });
-        let vbuf = self.vbuf.chunk(vbuf)?;
+        let vbuf = self.vbuf.chunk(self.queued.drain(..))?;
         let ubuf = self.ubuf.next(vs::ty::Data {
             dimensions: state.viewports.as_ref().unwrap()[0].dimensions,
         })?;
         let set = self.pool.next().add_buffer(ubuf)?.build()?;
 
         Ok(cmd.draw(Arc::clone(&self.pipe), state, vbuf, set, ())?)
+    }
+
+    pub fn queue_tri(&mut self, vertices: &[Point], color: Color) {
+        debug_assert!(vertices.len() % 3 == 0);
+        self.queued
+            .extend(vertices.iter().map(|&v| Vertex::new(v, color)));
     }
 }
 

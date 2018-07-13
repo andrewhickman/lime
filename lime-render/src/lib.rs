@@ -20,11 +20,24 @@ pub mod d2;
 pub mod d3;
 
 mod color;
-mod dim;
-mod render;
 mod sys;
 
 pub use self::color::Color;
-pub use self::dim::ScreenDimensions;
-pub use self::render::RenderSystem;
-pub use self::sys::init;
+pub use self::sys::RenderSystem;
+
+use shrev::EventChannel;
+use specs::{DispatcherBuilder, World};
+use winit::{EventsLoop, WindowBuilder};
+
+pub fn init(
+    world: &mut World,
+    dispatcher: &mut DispatcherBuilder,
+    events_loop: &EventsLoop,
+    builder: WindowBuilder,
+    d3: &str,
+    d2: &str,
+) {
+    world.add_resource(EventChannel::<winit::Event>::new());
+
+    RenderSystem::add(world, dispatcher, events_loop, builder, d3, d2);
+}

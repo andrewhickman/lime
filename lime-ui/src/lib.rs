@@ -63,7 +63,6 @@ pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
     world.add_resource(event::KeyboardFocus::new(&root));
     world.add_resource(event::MouseFocus::new());
     world.add_resource(EventChannel::<event::Event>::new());
-    world.add_resource(EventChannel::<winit::Event>::new());
 
     event::EventSystem::add(world, dispatcher);
     layout::LayoutSystem::add(world, dispatcher);

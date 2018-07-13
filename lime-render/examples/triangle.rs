@@ -1,48 +1,70 @@
+extern crate env_logger;
 extern crate lime_render as render;
+extern crate shrev;
 extern crate specs;
 extern crate winit;
 
-use render::{d2, d3, Color};
+use render::{d2, Color};
+use shrev::EventChannel;
 use specs::prelude::*;
 use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
 
 struct D3;
 
-impl d3::Draw for D3 {
-    fn draw(&self, _: &Resources, _: &mut FnMut(&d3::Mesh, Color)) {}
+impl<'a> System<'a> for D3 {
+    type SystemData = ();
+
+    fn run(&mut self, (): Self::SystemData) {}
 }
 
 struct D2;
 
-impl d2::Draw for D2 {
-    fn draw(&self, _: &Resources, visitor: &mut FnMut(&[d2::Point], Color)) {
+impl<'a> System<'a> for D2 {
+    type SystemData = WriteExpect<'a, d2::Renderer>;
+
+    fn run(&mut self, mut renderer: Self::SystemData) {
         static VERTICES: [d2::Point; 3] = [
             d2::Point(100.0, 100.0),
             d2::Point(200.0, 100.0),
             d2::Point(100.0, 200.0),
         ];
-        visitor(&VERTICES, Color::RED)
+        renderer.queue_tri(&VERTICES, Color::RED)
     }
 }
 
 fn main() {
+    env_logger::init();
+
     let mut events_loop = EventsLoop::new();
     let builder = WindowBuilder::new();
     let mut world = World::new();
-    let mut renderer = render::init(&mut world, &events_loop, builder, D3, D2);
+    let mut dispatcher = DispatcherBuilder::new()
+        .with(D3, "D3", &[])
+        .with(D2, "D2", &[]);
+    render::init(
+        &mut world,
+        &mut dispatcher,
+        &events_loop,
+        builder,
+        "D3",
+        "D2",
+    );
+    let mut dispatcher = dispatcher.build();
 
     let mut quit = false;
     while !quit {
         events_loop.poll_events(|event| {
             match event {
                 Event::WindowEvent {
-                    event: WindowEvent::Closed,
+                    event: WindowEvent::CloseRequested,
                     ..
                 } => quit = true,
-                _ => (),
+                event => world
+                    .write_resource::<EventChannel<Event>>()
+                    .single_write(event),
             };
         });
 
-        renderer.run_now(&mut world.res);
+        dispatcher.run_now(&mut world.res);
     }
 }
