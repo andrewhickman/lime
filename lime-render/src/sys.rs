@@ -27,7 +27,7 @@ pub struct RenderSystem {
     prev_frame: Option<Box<GpuFuture + Send + Sync>>,
     framebuffers: Vec<Arc<FramebufferAbstract + Send + Sync>>,
     swapchain_dirty: bool,
-    dpi_factor: f64,
+    dpi_factor: f32,
     event_rx: ReaderId<winit::Event>,
     dimensions: [f32; 2],
 }
@@ -168,7 +168,7 @@ impl RenderSystem {
                 render_pass,
                 prev_frame: None,
                 swapchain_dirty: false,
-                dpi_factor,
+                dpi_factor: dpi_factor as f32,
                 event_rx,
                 dimensions: [w as f32, h as f32],
             },
@@ -249,7 +249,9 @@ impl RenderSystem {
             vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
         )?;
         let command_buffer = d3.draw(command_buffer, state.clone())?.next_subpass(false)?;
-        let command_buffer = d2.draw(command_buffer, state)?.end_render_pass()?.build()?;
+        let command_buffer = d2.draw(command_buffer, state, self.logical_size())?
+            .end_render_pass()?
+            .build()?;
 
         self.prev_frame = Some(match self.prev_frame.take() {
             Some(last_frame) => self.execute(last_frame.join(acquire), command_buffer, img_num)?,
@@ -274,6 +276,11 @@ impl RenderSystem {
             );
         future.flush()?;
         Ok(Box::new(future))
+    }
+
+    fn logical_size(&self) -> [f32; 2] {
+        let [w, h] = self.dimensions;
+        [w / self.dpi_factor, h / self.dpi_factor]
     }
 }
 
@@ -313,7 +320,7 @@ impl<'a> System<'a> for RenderSystem {
                 ..
             } = event
             {
-                self.dpi_factor = *dpi_factor;
+                self.dpi_factor = *dpi_factor as f32;
             }
         }
 

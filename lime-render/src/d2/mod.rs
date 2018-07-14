@@ -78,10 +78,11 @@ impl Renderer {
         &mut self,
         cmd: AutoCommandBufferBuilder,
         state: DynamicState,
+        logical_size: [f32; 2],
     ) -> Result<AutoCommandBufferBuilder, failure::Error> {
         let vbuf = self.vbuf.chunk(self.queued.drain(..))?;
         let ubuf = self.ubuf.next(vs::ty::Data {
-            dimensions: state.viewports.as_ref().unwrap()[0].dimensions,
+            dimensions: logical_size,
         })?;
         let set = self.pool.next().add_buffer(ubuf)?.build()?;
 
