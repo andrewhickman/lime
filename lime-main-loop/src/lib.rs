@@ -11,21 +11,20 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use winit::{ControlFlow, DeviceEvent, Event, EventsLoop, EventsLoopProxy, WindowEvent};
+use winit::{ControlFlow, Event, EventsLoop, EventsLoopProxy};
 
 use self::action::{Action, QueuedAction};
 use self::ticker::Ticker;
 
 const SECOND: Duration = Duration::from_secs(1);
 
-pub trait App: Sized {
+pub trait App {
     const UPDATES_PER_SECOND: u32;
     const RENDERS_PER_SECOND: u32;
 
     fn update(&mut self, dt: Duration);
     fn render(&mut self, dt: Duration);
-    fn window_event(&mut self, event: WindowEvent) -> ControlFlow;
-    fn device_event(&mut self, event: DeviceEvent) -> ControlFlow;
+    fn event(&mut self, ev: Event) -> ControlFlow;
 }
 
 pub fn run<A, F>(build: F)
@@ -43,8 +42,6 @@ where
     let mut update_ticker = Ticker::new();
     let mut render_ticker = Ticker::new();
     events_loop.run_forever(|event| match event {
-        Event::WindowEvent { event, .. } => app.window_event(event),
-        Event::DeviceEvent { event, .. } => app.device_event(event),
         Event::Awakened => {
             let QueuedAction(action, deadline) = rx.recv().unwrap();
             if deadline < Instant::now() {
@@ -61,7 +58,7 @@ where
             }
             ControlFlow::Continue
         }
-        Event::Suspended(_) => ControlFlow::Continue,
+        event => app.event(event),
     })
 }
 

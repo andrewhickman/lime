@@ -4,7 +4,7 @@ extern crate log;
 extern crate backtrace;
 
 use std::any::Any;
-use std::panic::PanicInfo;
+use std::panic::{self, PanicInfo};
 use std::thread;
 
 use backtrace::Backtrace;
@@ -30,6 +30,11 @@ pub fn panic_hook(info: &PanicInfo) {
         msg,
         Backtrace::new()
     );
+}
+
+/// Set the panic hook.
+pub fn set_panic_hook() {
+    panic::set_hook(Box::new(panic_hook))
 }
 
 fn fmt_payload(payload: &(Any + Send)) -> String {
