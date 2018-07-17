@@ -43,16 +43,17 @@ where
     let mut render_ticker = Ticker::new();
     events_loop.run_forever(|event| match event {
         Event::Awakened => {
-            let QueuedAction(action, deadline) = rx.recv().unwrap();
-            if deadline < Instant::now() {
-                trace!("Skipping action {:?}.", action);
-            } else {
-                match action {
-                    Action::Update => app.update(update_ticker.tick()),
-                    Action::Render => app.render(render_ticker.tick()),
-                    Action::Log => {
-                        info!("Updates per second: {}.", update_ticker.split());
-                        info!("Renders per second: {}.", render_ticker.split());
+            while let Ok(QueuedAction(action, deadline)) = rx.try_recv() {
+                if deadline < Instant::now() {
+                    trace!("Skipping action {:?}.", action);
+                } else {
+                    match action {
+                        Action::Update => app.update(update_ticker.tick()),
+                        Action::Render => app.render(render_ticker.tick()),
+                        Action::Log => {
+                            info!("Updates per second: {}.", update_ticker.split());
+                            info!("Renders per second: {}.", render_ticker.split());
+                        }
                     }
                 }
             }
