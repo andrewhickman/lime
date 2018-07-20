@@ -93,7 +93,7 @@ fn cursor_update(
 }
 
 fn cursor_moved(
-    (x, y): (f64, f64),
+    point: Point,
     modifiers: ModifiersState,
     root: &Root,
     hover: &mut MouseFocus,
@@ -102,7 +102,7 @@ fn cursor_moved(
     poss: &ReadStorage<Position>,
     states: &ReadStorage<State>,
 ) {
-    hover.point = Point(x as f32, y as f32);
+    hover.point = point;
     cursor_update(root, hover, events, nodes, poss, states);
     if let Some(ent) = hover.entity {
         if states.get(ent).map(State::needs_events).unwrap_or(true) {
@@ -184,7 +184,7 @@ impl<'a> System<'a> for EventSystem {
                         ..
                     } => {
                         cursor_moved(
-                            position,
+                            position.into(),
                             modifiers,
                             &root,
                             &mut hover,

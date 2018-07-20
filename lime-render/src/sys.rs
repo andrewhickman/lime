@@ -14,8 +14,8 @@ use vulkano::instance::{Instance, PhysicalDevice};
 use vulkano::pipeline::viewport::Viewport;
 use vulkano::swapchain::{self, PresentMode, Surface, SurfaceTransform, Swapchain};
 use vulkano::sync::GpuFuture;
-use vulkano_win::{self, VkSurfaceBuild};
-use winit::{self, EventsLoop, Window, WindowBuilder, WindowEvent};
+use vulkano_win;
+use winit::{self, Window, WindowEvent};
 
 use {d2, d3};
 
@@ -38,8 +38,7 @@ impl RenderSystem {
     pub(crate) fn add(
         world: &mut World,
         dispatcher: &mut DispatcherBuilder,
-        events_loop: &EventsLoop,
-        builder: WindowBuilder,
+        window: Window,
         d3_sys: &str,
         d2_sys: &str,
     ) {
@@ -53,9 +52,8 @@ impl RenderSystem {
             .expect("no device available");
         info!("Using device: {} (type: {:?}).", phys.name(), phys.ty());
 
-        let surface = builder
-            .build_vk_surface(&events_loop, Arc::clone(&instance))
-            .unwrap_or_else(throw);
+        let surface =
+            vulkano_win::create_vk_surface(window, Arc::clone(&instance)).unwrap_or_else(throw);
 
         let queue_family = phys.queue_families()
             .find(|&q| q.supports_graphics() && surface.is_supported(q).unwrap_or(false))
@@ -89,12 +87,8 @@ impl RenderSystem {
             .expect("surface has no supported alpha modes");
 
         let dpi_factor = surface.window().get_hidpi_factor();
-        let physical_size = surface
-            .window()
-            .get_inner_size()
-            .unwrap()
-            .to_physical(dpi_factor);
-        let (w, h) = physical_size.into();
+        let logical_size = surface.window().get_inner_size().unwrap();
+        let (w, h) = logical_size.to_physical(dpi_factor).into();
         let (swapchain, images) = Swapchain::new(
             Arc::clone(queue.device()),
             Arc::clone(&surface),
@@ -146,9 +140,16 @@ impl RenderSystem {
             .unwrap_or_else(throw);
         let framebuffers =
             create_framebuffers(&render_pass, images, &depth_buffer).unwrap_or_else(throw);
-        let event_rx = world
-            .write_resource::<EventChannel<winit::Event>>()
-            .register_reader();
+
+        let event_rx = {
+            let mut event_tx = world.write_resource::<EventChannel<winit::Event>>();
+            let event_rx = event_tx.register_reader();
+            event_tx.single_write(winit::Event::WindowEvent {
+                event: WindowEvent::Resized(logical_size),
+                window_id: surface.window().id(),
+            });
+            event_rx
+        };
 
         world.add_resource(d3::Renderer::new(
             queue.device(),
@@ -177,7 +178,7 @@ impl RenderSystem {
         )
     }
 
-    pub(crate) fn render(&mut self, d3: &mut d3::Renderer, d2: &mut d2::Renderer) {
+    fn render(&mut self, d3: &mut d3::Renderer, d2: &mut d2::Renderer) {
         for _ in 0..5 {
             if self.swapchain_dirty {
                 match self.recreate_swapchain() {

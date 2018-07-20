@@ -3,6 +3,7 @@ extern crate env_logger;
 extern crate lime_render as render;
 extern crate lime_ui as ui;
 extern crate lime_utils as utils;
+extern crate shrev;
 extern crate specs;
 extern crate winit;
 
@@ -12,6 +13,7 @@ use std::iter;
 
 use cassowary::strength::*;
 use render::Color;
+use shrev::EventChannel;
 use specs::prelude::*;
 use ui::draw::Brush;
 use ui::layout::{Constraints, Position};
@@ -65,10 +67,10 @@ fn main() {
         events_loop.poll_events(|event| {
             match event {
                 Event::WindowEvent {
-                    event: WindowEvent::Closed,
+                    event: WindowEvent::CloseRequested,
                     ..
                 } => quit = true,
-                _ => (),
+                ev => world.write_resource::<EventChannel<_>>().single_write(ev),
             };
         });
 

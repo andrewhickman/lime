@@ -2,11 +2,11 @@ use cassowary::strength::REQUIRED;
 use cassowary::WeightedRelation::*;
 use cassowary::{Constraint, Solver, Variable};
 use fnv::FnvHashMap;
-use render::ScreenDimensions;
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
 use specs_mirror::{StorageExt, StorageMutExt};
 use utils::throw;
+use winit::{self, WindowEvent::Resized};
 
 use layout::cons::{ConstraintUpdate, ConstraintsStorage};
 use layout::{Constraints, Position};
@@ -16,7 +16,7 @@ use {State, StateEvent};
 pub struct LayoutSystem {
     solver: Solver,
     changes: FnvHashMap<Variable, f64>,
-    dims_rx: ReaderId<ScreenDimensions>,
+    events_rx: ReaderId<winit::Event>,
     state_rx: ReaderId<StateEvent>,
     width: Variable,
     height: Variable,
@@ -26,10 +26,9 @@ impl LayoutSystem {
     pub const NAME: &'static str = "ui::Layout";
 
     pub(crate) fn add(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
-        let dims = world.read_resource::<ScreenDimensions>();
         let root = world.read_resource::<Root>();
         let mut poss = world.write_storage::<Position>();
-        let mut dims_tx = world.write_resource::<EventChannel<ScreenDimensions>>();
+        let mut events_tx = world.write_resource::<EventChannel<winit::Event>>();
         let state_rx = world.write_storage::<State>().register_reader();
 
         let mut solver = Solver::new();
@@ -53,22 +52,42 @@ impl LayoutSystem {
         let mut sys = LayoutSystem {
             solver,
             changes: FnvHashMap::default(),
-            dims_rx: dims_tx.register_reader(),
+            events_rx: events_tx.register_reader(),
             state_rx,
             width,
             height,
         };
 
-        sys.resize(width, dims.width());
-        sys.resize(height, dims.height());
+        sys.handle_resize(&events_tx);
 
         dispatcher.add_thread_local(sys);
     }
 
-    fn resize(&mut self, var: Variable, val: u32) {
+    fn handle_resize(&mut self, events_tx: &EventChannel<winit::Event>) {
+        let resize = events_tx
+            .read(&mut self.events_rx)
+            .filter_map(|event| match event {
+                winit::Event::WindowEvent {
+                    event: Resized(size),
+                    ..
+                } => Some(size),
+                _ => None,
+            })
+            .last();
+
+        if let Some(size) = resize {
+            trace!("Resizing ui to '({}, {})'.", size.width, size.height);
+            let width = self.width;
+            self.resize(width, size.width);
+            let height = self.height;
+            self.resize(height, size.height);
+        }
+    }
+
+    fn resize(&mut self, var: Variable, val: f64) {
         use cassowary::SuggestValueError::*;
 
-        match self.solver.suggest_value(var, val.into()) {
+        match self.solver.suggest_value(var, val) {
             Ok(()) => (),
             Err(UnknownEditVariable) => panic!("Unknown edit variable {:?}", var),
             Err(InternalSolverError(msg)) => panic!(msg),
@@ -99,21 +118,14 @@ impl LayoutSystem {
 
 impl<'a> System<'a> for LayoutSystem {
     type SystemData = (
-        ReadExpect<'a, EventChannel<ScreenDimensions>>,
+        ReadExpect<'a, EventChannel<winit::Event>>,
         WriteStorage<'a, Constraints>,
         WriteStorage<'a, Position>,
         ReadStorage<'a, State>,
     );
 
-    fn run(&mut self, (dims_tx, mut cons, mut poss, states): Self::SystemData) {
-        let resize = dims_tx.read(&mut self.dims_rx).last().cloned();
-        if let Some(dims) = resize {
-            trace!("Resizing ui to '({}, {})'.", dims.width(), dims.height());
-            let width = self.width;
-            self.resize(width, dims.width());
-            let height = self.height;
-            self.resize(height, dims.height());
-        }
+    fn run(&mut self, (events_tx, mut cons, mut poss, states): Self::SystemData) {
+        self.handle_resize(&events_tx);
 
         for state_ev in states.read_events(&mut self.state_rx) {
             if let Some(needs_layout) = state_ev.needs_layout_changed() {

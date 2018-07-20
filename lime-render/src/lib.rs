@@ -25,19 +25,15 @@ mod sys;
 pub use self::color::Color;
 pub use self::sys::RenderSystem;
 
-use shrev::EventChannel;
 use specs::{DispatcherBuilder, World};
-use winit::{EventsLoop, WindowBuilder};
+use winit::Window;
 
 pub fn init(
     world: &mut World,
     dispatcher: &mut DispatcherBuilder,
-    events_loop: &EventsLoop,
-    builder: WindowBuilder,
+    window: Window,
     d3: &str,
     d2: &str,
 ) {
-    world.add_resource(EventChannel::<winit::Event>::new());
-
-    RenderSystem::add(world, dispatcher, events_loop, builder, d3, d2);
+    RenderSystem::add(world, dispatcher, window, d3, d2);
 }

@@ -16,9 +16,9 @@ serde = "1.0.66"
 serde_derive = "1.0.66"
 specs = "0.12.0"
 shrev = "1.0.1"
-vulkano = { git = "https://github.com/vulkano-rs/vulkano/" }
-vulkano-shader-derive = { git = "https://github.com/vulkano-rs/vulkano/" }
-vulkano-win = { git = "https://github.com/vulkano-rs/vulkano/" }
+vulkano = { git = "https://github.com/andrewhickman/vulkano/" }
+vulkano-shader-derive = { git = "https://github.com/andrewhickman/vulkano/" }
+vulkano-win = { git = "https://github.com/andrewhickman/vulkano/" }
 winit = "0.16.2"
 
 [dev-dependencies]

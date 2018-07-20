@@ -2,13 +2,13 @@ use std::iter;
 
 use cassowary::strength::*;
 use render::d2::Point;
-use render::ScreenDimensions;
 use serde_json as json;
-use shrev::EventChannel;
 use specs::prelude::*;
 use specs_mirror::StorageMutExt;
+use winit::WindowEvent::Resized;
 
 use super::*;
+use event::tests::run_window_event;
 use layout::{Constraints, ConstraintsBuilder, Position};
 use tests::init_test;
 use tree::{Node, Root};
@@ -73,16 +73,16 @@ fn assert_approx_eq(l: Point, r: Point) {
 
 #[test]
 fn empty() {
-    let (mut world, mut dispatcher) = init_test([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test();
 
     create_root_grid(&mut world, iter::empty(), iter::empty());
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1000, 750).into()));
 }
 
 #[test]
 fn basic() {
-    let (mut world, mut dispatcher) = init_test([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test();
 
     let grid = create_root_grid(
         &mut world,
@@ -100,7 +100,7 @@ fn basic() {
         bld.min_size((100.0, 100.0), STRONG)
     });
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1000, 750).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -115,10 +115,7 @@ fn basic() {
         assert_approx_eq(p3.bottom_right(), Point(100.0, 300.0));
     }
 
-    world
-        .write_resource::<EventChannel<ScreenDimensions>>()
-        .single_write([1200, 900].into());
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1200, 900).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -136,7 +133,7 @@ fn basic() {
 
 #[test]
 fn auto() {
-    let (mut world, mut dispatcher) = init_test([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test();
 
     let grid = create_root_grid(
         &mut world,
@@ -154,7 +151,7 @@ fn auto() {
         bld.min_size((400.0, 500.0), STRONG)
     });
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1000, 750).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -169,10 +166,7 @@ fn auto() {
         assert_approx_eq(p3.bottom_right(), Point(400.0, 750.0));
     }
 
-    world
-        .write_resource::<EventChannel<ScreenDimensions>>()
-        .single_write([1200, 1100].into());
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1200, 1100).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -190,7 +184,7 @@ fn auto() {
 
 #[test]
 fn abs() {
-    let (mut world, mut dispatcher) = init_test([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test();
 
     let grid = create_root_grid(
         &mut world,
@@ -205,7 +199,7 @@ fn abs() {
         bld.min_size((0.0, 0.0), STRONG)
     });
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1000, 750).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -217,10 +211,7 @@ fn abs() {
         assert_approx_eq(p2.bottom_right(), Point(1000.0, 750.0));
     }
 
-    world
-        .write_resource::<EventChannel<ScreenDimensions>>()
-        .single_write([1200, 1100].into());
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1200, 1100).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -235,7 +226,7 @@ fn abs() {
 
 #[test]
 fn rel() {
-    let (mut world, mut dispatcher) = init_test([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test();
 
     let grid = create_root_grid(
         &mut world,
@@ -253,7 +244,7 @@ fn rel() {
         bld.min_size((0.0, 0.0), STRONG)
     });
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1000, 750).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -268,10 +259,7 @@ fn rel() {
         assert_approx_eq(p3.bottom_right(), Point(1000.0, 250.0));
     }
 
-    world
-        .write_resource::<EventChannel<ScreenDimensions>>()
-        .single_write([1200, 1200].into());
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1200, 1200).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -289,7 +277,7 @@ fn rel() {
 
 #[test]
 fn mix() {
-    let (mut world, mut dispatcher) = init_test([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test();
 
     let grid = create_root_grid(
         &mut world,
@@ -313,7 +301,7 @@ fn mix() {
     let r4 = create_rect(&mut world, grid, 2, 0, |bld| bld);
     let r5 = create_rect(&mut world, grid, 3, 0, |bld| bld);
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1000, 750).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -334,10 +322,7 @@ fn mix() {
         assert_approx_eq(p5.bottom_right(), Point(850.0, 300.0));
     }
 
-    world
-        .write_resource::<EventChannel<ScreenDimensions>>()
-        .single_write([1300, 1200].into());
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1300, 1200).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -361,7 +346,7 @@ fn mix() {
 
 #[test]
 fn size() {
-    let (mut world, mut dispatcher) = init_test([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test();
 
     let grid = create_grid(
         &mut world,
@@ -376,7 +361,7 @@ fn size() {
         bld.size((200.0, 300.0), STRONG)
     });
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1000, 750).into()));
 
     {
         let comps = world.read_storage::<Position>();
@@ -394,7 +379,7 @@ fn set_needs_layout(world: &mut World, entity: Entity, value: bool) {
 
 #[test]
 fn state() {
-    let (mut world, mut dispatcher) = init_test([1000, 750].into());
+    let (mut world, mut dispatcher) = init_test();
 
     let grid = create_grid(&mut world, vec![Size::Auto], vec![Size::Auto]);
 
@@ -414,7 +399,7 @@ fn state() {
         .with(State::default())
         .build();
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(&mut world, &mut dispatcher, Resized((1000, 750).into()));
 
     {
         let comps = world.read_storage::<Position>();

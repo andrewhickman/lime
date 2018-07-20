@@ -36,19 +36,13 @@ fn main() {
     env_logger::init();
 
     let mut events_loop = EventsLoop::new();
-    let builder = WindowBuilder::new();
+    let window = WindowBuilder::new().build(&events_loop).unwrap();
     let mut world = World::new();
     let mut dispatcher = DispatcherBuilder::new()
         .with(D3, "D3", &[])
         .with(D2, "D2", &[]);
-    render::init(
-        &mut world,
-        &mut dispatcher,
-        &events_loop,
-        builder,
-        "D3",
-        "D2",
-    );
+    world.add_resource(EventChannel::<winit::Event>::new());
+    render::init(&mut world, &mut dispatcher, window, "D3", "D2");
     let mut dispatcher = dispatcher.build();
 
     let mut quit = false;

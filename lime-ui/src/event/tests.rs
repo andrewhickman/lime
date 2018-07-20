@@ -4,6 +4,7 @@ use cassowary::strength::REQUIRED;
 use cassowary::WeightedRelation::EQ;
 use render::d2::Point;
 use shrev::EventChannel;
+use winit::dpi::LogicalPosition;
 use winit::{self, ModifiersState, WindowEvent};
 
 use super::*;
@@ -21,6 +22,16 @@ pub fn emit_keyboard_event(world: &mut World, entity: Entity, event: KeyboardEve
     world
         .write_resource::<EventChannel<Event>>()
         .single_write(Event::keyboard(entity, event));
+}
+
+pub fn run_window_event(world: &mut World, dispatcher: &mut Dispatcher, event: WindowEvent) {
+    world
+        .write_resource::<EventChannel<winit::Event>>()
+        .single_write(winit::Event::WindowEvent {
+            event,
+            window_id: unsafe { mem::zeroed() },
+        });
+    dispatcher.dispatch(&world.res);
 }
 
 fn create_rect(
@@ -44,16 +55,6 @@ fn create_rect(
         .with(cons)
 }
 
-fn run_window_event(world: &mut World, dispatcher: &mut Dispatcher, event: WindowEvent) {
-    world
-        .write_resource::<EventChannel<winit::Event>>()
-        .single_write(winit::Event::WindowEvent {
-            event,
-            window_id: unsafe { mem::zeroed() },
-        });
-    dispatcher.dispatch(&world.res);
-}
-
 fn find_mouse_event(events: &[Event], entity: Entity, event: MouseEvent) -> bool {
     events
         .iter()
@@ -73,7 +74,7 @@ fn assert_mouse_focus(
         world,
         dispatcher,
         WindowEvent::CursorMoved {
-            position: (x, y),
+            position: LogicalPosition::new(x, y),
             modifiers: ModifiersState::default(),
             device_id: unsafe { mem::zeroed() },
         },
@@ -122,7 +123,7 @@ fn mouse_moved(world: &mut World, reader: &mut ReaderId<Event>) -> bool {
 
 #[test]
 fn mouse_focus() {
-    let (mut world, mut dispatcher) = init_test([1500, 1500].into());
+    let (mut world, mut dispatcher) = init_test();
     let mut rdr = world
         .write_resource::<EventChannel<Event>>()
         .register_reader();
@@ -131,7 +132,11 @@ fn mouse_focus() {
     let r1 = create_rect(&mut world, root, 0.0, 0.0, 1000.0, 1000.0).build();
     let r2 = create_rect(&mut world, root, 500.0, 500.0, 1000.0, 1000.0).build();
 
-    dispatcher.dispatch(&world.res);
+    run_window_event(
+        &mut world,
+        &mut dispatcher,
+        WindowEvent::Resized((1500, 1500).into()),
+    );
 
     assert_mouse_focus(
         &mut world,

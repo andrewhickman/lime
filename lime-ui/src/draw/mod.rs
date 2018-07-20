@@ -2,7 +2,7 @@ mod style;
 
 pub use self::style::{Style, StyleEvent};
 
-use render::d2::{Draw, Point};
+use render::d2::Renderer;
 use render::Color;
 use specs::prelude::*;
 
@@ -23,18 +23,23 @@ impl PartialEq for Brush {
     }
 }
 
-pub struct DrawUi;
+pub struct DrawSystem;
 
-type Data<'a> = (
-    ReadExpect<'a, Root>,
-    ReadStorage<'a, Node>,
-    ReadStorage<'a, Brush>,
-    ReadStorage<'a, State>,
-);
+impl DrawSystem {
+    pub const NAME: &'static str = "ui::Draw";
+}
 
-impl Draw for DrawUi {
-    fn draw(&self, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
-        let (root, nodes, brushes, states) = Data::fetch(res);
+impl<'a> System<'a> for DrawSystem {
+    type SystemData = (
+        WriteExpect<'a, Renderer>,
+        ReadExpect<'a, Root>,
+        ReadStorage<'a, Node>,
+        ReadStorage<'a, Brush>,
+        ReadStorage<'a, State>,
+        ReadStorage<'a, Position>,
+    );
+
+    fn run(&mut self, (mut renderer, root, nodes, brushes, states, poss): Self::SystemData) {
         tree::walk::<(), _, _>(
             root.entity(),
             &nodes,
@@ -42,7 +47,9 @@ impl Draw for DrawUi {
                 if states.get(ent).map(State::needs_draw).unwrap_or(true) {
                     if let Some(brush) = brushes.get(ent) {
                         match *brush {
-                            Brush::Color(color) => draw_color(ent, color, res, visitor),
+                            Brush::Color(color) => if let Some(pos) = poss.get(ent) {
+                                renderer.queue_tri(&pos.tris(), color)
+                            },
                         }
                     }
                 }
@@ -50,12 +57,5 @@ impl Draw for DrawUi {
             },
             &mut |_| WalkPostResult::Continue,
         );
-    }
-}
-
-fn draw_color(ent: Entity, color: Color, res: &Resources, visitor: &mut FnMut(&[Point], Color)) {
-    let poss = ReadStorage::<Position>::fetch(res);
-    if let Some(pos) = poss.get(ent) {
-        visitor(&pos.tris(), color);
     }
 }

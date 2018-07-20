@@ -12,34 +12,9 @@ extern crate winit;
 #[allow(unused)]
 mod common;
 
-use std::panic;
-
 use shrev::EventChannel;
-use specs::prelude::*;
 use ui::de::{deserialize, Registry};
-use ui::draw::DrawUi;
-use winit::{Event, EventsLoop, WindowBuilder, WindowEvent};
-
-use common::D3;
-
-pub fn init_de(events_loop: &EventsLoop, data: &str) -> (World, Dispatcher<'static, 'static>) {
-    env_logger::init();
-    panic::set_hook(Box::new(utils::panic_hook));
-
-    let mut world = World::new();
-    let mut dispatcher = DispatcherBuilder::new();
-    let render_sys = render::init(&mut world, &events_loop, WindowBuilder::new(), D3, DrawUi);
-    ui::init(&mut world, &mut dispatcher);
-    deserialize(
-        &mut json::Deserializer::from_str(data),
-        &Registry::new(),
-        &mut world.res,
-    ).unwrap();
-    world.maintain();
-    let dispatcher = dispatcher.with_thread_local(render_sys).build();
-
-    (world, dispatcher)
-}
+use winit::{Event, EventsLoop, WindowEvent};
 
 const DATA: &'static str = r##"
 {
@@ -143,14 +118,21 @@ const DATA: &'static str = r##"
 
 fn main() {
     let mut events_loop = EventsLoop::new();
-    let (world, mut dispatcher) = init_de(&events_loop, DATA);
+    let (mut world, mut dispatcher) = common::init(&events_loop);
+
+    deserialize(
+        &mut json::Deserializer::from_str(DATA),
+        &Registry::new(),
+        &mut world.res,
+    ).unwrap();
+    world.maintain();
 
     let mut quit = false;
     while !quit {
         events_loop.poll_events(|event| {
             match event {
                 Event::WindowEvent {
-                    event: WindowEvent::Closed,
+                    event: WindowEvent::CloseRequested,
                     ..
                 } => quit = true,
                 ev => world.write_resource::<EventChannel<_>>().single_write(ev),

@@ -47,7 +47,7 @@ fn button() {
     use event::MouseEvent::*;
     use widget::button::ButtonState::*;
 
-    let (mut world, mut dispatcher) = init_test([0, 0].into());
+    let (mut world, mut dispatcher) = init_test();
     let mut reader = world.write_storage::<Button>().register_reader();
     let root = world.read_resource::<Root>().entity();
 
@@ -124,7 +124,7 @@ fn toggle_button() {
     use event::MouseEvent::*;
     use widget::button::ButtonState::*;
 
-    let (mut world, mut dispatcher) = init_test([1500, 1500].into());
+    let (mut world, mut dispatcher) = init_test();
     let mut btn_rdr = world.write_storage::<Button>().register_reader();
     let mut tgl_rdr = world.write_storage::<ToggleButton>().register_reader();
     let root = world.read_resource::<Root>().entity();
@@ -212,7 +212,7 @@ fn radio_button() {
     use event::MouseEvent::*;
     use widget::button::ButtonState::*;
 
-    let (mut world, mut dispatcher) = init_test([1500, 1500].into());
+    let (mut world, mut dispatcher) = init_test();
     let mut btn_rdr = world.write_storage::<Button>().register_reader();
     let mut tgl_rdr1 = world.write_storage::<ToggleButton>().register_reader();
     let mut tgl_rdr2 = world.write_storage::<ToggleButton>().register_reader();

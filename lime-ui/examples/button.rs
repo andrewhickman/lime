@@ -56,7 +56,7 @@ fn main() {
         events_loop.poll_events(|event| {
             match event {
                 Event::WindowEvent {
-                    event: WindowEvent::Closed,
+                    event: WindowEvent::CloseRequested,
                     ..
                 } => quit = true,
                 ev => world.write_resource::<EventChannel<_>>().single_write(ev),
