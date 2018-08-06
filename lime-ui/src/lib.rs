@@ -40,8 +40,7 @@ mod tests;
 pub use state::{State, StateEvent};
 
 use shrev::EventChannel;
-use specs::DispatcherBuilder;
-use specs::World;
+use specs::{DispatcherBuilder, World};
 
 pub fn init(world: &mut World, dispatcher: &mut DispatcherBuilder<'_, '_>) {
     world.register::<State>();

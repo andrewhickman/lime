@@ -20,9 +20,11 @@ pub mod d2;
 pub mod d3;
 
 mod color;
+mod context;
 mod sys;
 
 pub use self::color::Color;
+pub use self::context::Context;
 pub use self::sys::RenderSystem;
 
 use specs::{DispatcherBuilder, World};

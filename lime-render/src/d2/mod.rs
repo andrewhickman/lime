@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use failure;
 use utils::throw;
-use vulkano::buffer::{BufferUsage, CpuBufferPool};
+use vulkano::buffer::CpuBufferPool;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::descriptor::descriptor_set::FixedSizeDescriptorSetsPool;
 use vulkano::descriptor::PipelineLayoutAbstract;
@@ -53,15 +53,8 @@ impl Renderer {
                 .unwrap_or_else(throw),
         );
 
-        let vbuf = {
-            let usage = BufferUsage::vertex_buffer();
-            CpuBufferPool::new(Arc::clone(device), usage)
-        };
-
-        let ubuf = {
-            let usage = BufferUsage::uniform_buffer();
-            CpuBufferPool::new(Arc::clone(device), usage)
-        };
+        let vbuf = CpuBufferPool::vertex_buffer(Arc::clone(device));
+        let ubuf = CpuBufferPool::uniform_buffer(Arc::clone(device));
 
         let pool = FixedSizeDescriptorSetsPool::new(Arc::clone(&pipe), 0);
 
@@ -74,10 +67,10 @@ impl Renderer {
         }
     }
 
-    pub(crate) fn draw(
+    pub(crate) fn commit(
         &mut self,
         cmd: AutoCommandBufferBuilder,
-        state: DynamicState,
+        state: &DynamicState,
         logical_size: [f32; 2],
     ) -> Result<AutoCommandBufferBuilder, failure::Error> {
         let vbuf = self.vbuf.chunk(self.queued.drain(..))?;
@@ -89,7 +82,7 @@ impl Renderer {
         Ok(cmd.draw(Arc::clone(&self.pipe), state, vbuf, set, ())?)
     }
 
-    pub fn queue_tri(&mut self, vertices: &[Point], color: Color) {
+    pub fn draw_tri(&mut self, vertices: &[Point], color: Color) {
         debug_assert!(vertices.len() % 3 == 0);
         self.queued
             .extend(vertices.iter().map(|&v| Vertex::new(v, color)));

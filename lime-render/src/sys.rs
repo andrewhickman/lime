@@ -55,7 +55,8 @@ impl RenderSystem {
         let surface =
             vulkano_win::create_vk_surface(window, Arc::clone(&instance)).unwrap_or_else(throw);
 
-        let queue_family = phys.queue_families()
+        let queue_family = phys
+            .queue_families()
             .find(|&q| q.supports_graphics() && surface.is_supported(q).unwrap_or(false))
             .expect("couldn't find a graphical queue family");
 
@@ -78,10 +79,12 @@ impl RenderSystem {
         let caps = surface
             .capabilities(queue.device().physical_device())
             .unwrap_or_else(throw);
-        let format = caps.supported_formats
+        let format = caps
+            .supported_formats
             .first()
             .expect("surface has no supported formats");
-        let alpha = caps.supported_composite_alpha
+        let alpha = caps
+            .supported_composite_alpha
             .iter()
             .next()
             .expect("surface has no supported alpha modes");
@@ -207,7 +210,8 @@ impl RenderSystem {
     }
 
     fn recreate_swapchain(&mut self) -> Result<(), failure::Error> {
-        let dimensions = self.surface
+        let dimensions = self
+            .surface
             .capabilities(self.queue.device().physical_device())?
             .current_extent
             .unwrap();
@@ -249,8 +253,9 @@ impl RenderSystem {
             false,
             vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
         )?;
-        let command_buffer = d3.draw(command_buffer, state.clone())?.next_subpass(false)?;
-        let command_buffer = d2.draw(command_buffer, state, self.logical_size())?
+        let command_buffer = d3.commit(command_buffer, &state)?.next_subpass(false)?;
+        let command_buffer = d2
+            .commit(command_buffer, &state, self.logical_size())?
             .end_render_pass()?
             .build()?;
 
@@ -301,10 +306,12 @@ fn create_framebuffer(
     img: Arc<SwapchainImage<Window>>,
     dbuf: &Arc<AttachmentImage<D16Unorm>>,
 ) -> Result<Arc<FramebufferAbstract + Send + Sync>, failure::Error> {
-    Ok(Arc::new(Framebuffer::start(Arc::clone(pass))
-        .add(img)?
-        .add(Arc::clone(dbuf))?
-        .build()?))
+    Ok(Arc::new(
+        Framebuffer::start(Arc::clone(pass))
+            .add(img)?
+            .add(Arc::clone(dbuf))?
+            .build()?,
+    ))
 }
 
 impl<'a> System<'a> for RenderSystem {
