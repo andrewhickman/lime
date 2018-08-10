@@ -22,10 +22,10 @@ pub mod d3;
 mod color;
 mod context;
 mod sys;
+mod target;
 
 pub use self::color::Color;
 pub use self::context::Context;
-pub use self::sys::RenderSystem;
 
 use specs::{DispatcherBuilder, World};
 use winit::Window;
@@ -37,5 +37,5 @@ pub fn init(
     d3: &str,
     d2: &str,
 ) {
-    RenderSystem::add(world, dispatcher, window, d3, d2);
+    sys::RenderSystem::add(world, dispatcher, window, d3, d2);
 }

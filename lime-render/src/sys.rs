@@ -7,32 +7,31 @@ use specs::prelude::*;
 use utils::throw;
 use vulkano::command_buffer::{AutoCommandBuffer, AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::{Device, DeviceExtensions, Queue};
-use vulkano::format::{D16Unorm, Format};
-use vulkano::framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass};
-use vulkano::image::{AttachmentImage, SwapchainImage};
+use vulkano::format::Format;
+use vulkano::framebuffer::Subpass;
 use vulkano::instance::{Instance, PhysicalDevice};
 use vulkano::pipeline::viewport::Viewport;
-use vulkano::swapchain::{self, PresentMode, Surface, SurfaceTransform, Swapchain};
+use vulkano::swapchain::Surface;
 use vulkano::sync::GpuFuture;
 use vulkano_win;
 use winit::{self, Window, WindowEvent};
 
+use target::{SwapchainTarget, Target};
 use {d2, d3};
 
-pub struct RenderSystem {
+pub(crate) struct RenderSystem<T> {
     pub(crate) queue: Arc<Queue>,
     surface: Arc<Surface<Window>>,
-    swapchain: Arc<Swapchain<Window>>,
-    render_pass: Arc<RenderPassAbstract + Send + Sync>,
     prev_frame: Option<Box<GpuFuture + Send + Sync>>,
-    framebuffers: Vec<Arc<FramebufferAbstract + Send + Sync>>,
     swapchain_dirty: bool,
     dpi_factor: f32,
     event_rx: ReaderId<winit::Event>,
     dimensions: [f32; 2],
+    state: DynamicState,
+    target: T,
 }
 
-impl RenderSystem {
+impl RenderSystem<SwapchainTarget> {
     pub const NAME: &'static str = "render::Render";
 
     pub(crate) fn add(
@@ -76,73 +75,42 @@ impl RenderSystem {
 
         let queue = queues.next().unwrap();
 
-        let caps = surface
-            .capabilities(queue.device().physical_device())
-            .unwrap_or_else(throw);
-        let format = caps
-            .supported_formats
-            .first()
-            .expect("surface has no supported formats");
-        let alpha = caps
-            .supported_composite_alpha
-            .iter()
-            .next()
-            .expect("surface has no supported alpha modes");
-
         let dpi_factor = surface.window().get_hidpi_factor();
         let logical_size = surface.window().get_inner_size().unwrap();
         let (w, h) = logical_size.to_physical(dpi_factor).into();
-        let (swapchain, images) = Swapchain::new(
-            Arc::clone(queue.device()),
-            Arc::clone(&surface),
-            caps.min_image_count,
-            format.0,
-            [w, h],
-            1,
-            caps.supported_usage_flags,
-            &queue,
-            SurfaceTransform::Identity,
-            alpha,
-            PresentMode::Mailbox,
-            true,
-            None,
-        ).unwrap_or_else(throw);
 
-        let render_pass = Arc::new(
-            ordered_passes_renderpass!(Arc::clone(queue.device()),
-            attachments: {
-                color: {
-                    load: Clear,
-                    store: Store,
-                    format: swapchain.format(),
-                    samples: 1,
+        let target = SwapchainTarget::new(&queue, &surface, [w, h], |format| {
+            Arc::new(
+                ordered_passes_renderpass!(Arc::clone(queue.device()),
+                attachments: {
+                    color: {
+                        load: Clear,
+                        store: Store,
+                        format: format,
+                        samples: 1,
+                    },
+                    depth: {
+                        load: Clear,
+                        store: DontCare,
+                        format: Format::D16Unorm,
+                        samples: 1,
+                    }
                 },
-                depth: {
-                    load: Clear,
-                    store: DontCare,
-                    format: Format::D16Unorm,
-                    samples: 1,
-                }
-            },
-            passes: [
-                {
-                    color: [color],
-                    depth_stencil: {depth},
-                    input: []
-                },
-                {
-                    color: [color],
-                    depth_stencil: { },
-                    input: []
-                }
-            ]
-        ).unwrap_or_else(throw),
-        ) as Arc<RenderPassAbstract + Send + Sync>;
-
-        let depth_buffer = AttachmentImage::transient(Arc::clone(queue.device()), [w, h], D16Unorm)
-            .unwrap_or_else(throw);
-        let framebuffers =
-            create_framebuffers(&render_pass, images, &depth_buffer).unwrap_or_else(throw);
+                passes: [
+                    {
+                        color: [color],
+                        depth_stencil: {depth},
+                        input: []
+                    },
+                    {
+                        color: [color],
+                        depth_stencil: { },
+                        input: []
+                    }
+                ]
+            ).unwrap_or_else(throw),
+            )
+        }).unwrap_or_else(throw);
 
         let event_rx = {
             let mut event_tx = world.write_resource::<EventChannel<winit::Event>>();
@@ -156,31 +124,47 @@ impl RenderSystem {
 
         world.add_resource(d3::Renderer::new(
             queue.device(),
-            Subpass::from(Arc::clone(&render_pass), 0).unwrap(),
+            Subpass::from(target.render_pass(), 0).unwrap(),
         ));
         world.add_resource(d2::Renderer::new(
             queue.device(),
-            Subpass::from(Arc::clone(&render_pass), 1).unwrap(),
+            Subpass::from(target.render_pass(), 1).unwrap(),
         ));
+
+        let dimensions = [w as f32, h as f32];
+
+        let state = DynamicState {
+            line_width: None,
+            viewports: Some(vec![Viewport {
+                origin: [0.0, 0.0],
+                dimensions,
+                depth_range: 0.0..1.0,
+            }]),
+            scissors: None,
+        };
 
         dispatcher.add(
             RenderSystem {
                 surface,
                 queue,
-                swapchain,
-                framebuffers,
-                render_pass,
                 prev_frame: None,
                 swapchain_dirty: false,
                 dpi_factor: dpi_factor as f32,
                 event_rx,
-                dimensions: [w as f32, h as f32],
+                target,
+                dimensions,
+                state,
             },
             RenderSystem::NAME,
             &[d3_sys, d2_sys],
         )
     }
+}
 
+impl<T> RenderSystem<T>
+where
+    T: Target,
+{
     fn render(&mut self, d3: &mut d3::Renderer, d2: &mut d2::Renderer) {
         for _ in 0..5 {
             if self.swapchain_dirty {
@@ -215,12 +199,9 @@ impl RenderSystem {
             .capabilities(self.queue.device().physical_device())?
             .current_extent
             .unwrap();
-        let (swapchain, images) = self.swapchain.recreate_with_dimension(dimensions)?;
-        self.swapchain = swapchain;
-        let depth_buffer =
-            AttachmentImage::transient(Arc::clone(self.queue.device()), dimensions, D16Unorm)?;
-        self.framebuffers = create_framebuffers(&self.render_pass, images, &depth_buffer)?;
+        self.target.resize(&self.queue, dimensions)?;
         self.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+        self.state.viewports.as_mut().unwrap()[0].dimensions = self.dimensions;
         Ok(())
     }
 
@@ -229,21 +210,11 @@ impl RenderSystem {
         d3: &mut d3::Renderer,
         d2: &mut d2::Renderer,
     ) -> Result<(), failure::Error> {
-        let (img_num, acquire) = swapchain::acquire_next_image(self.swapchain.clone(), None)?;
-        let fb = Arc::clone(&self.framebuffers[img_num]);
+        let (fb, acquire) = self.target.acquire(&self.queue)?;
+
         if let Some(ref mut last_frame) = self.prev_frame {
             last_frame.cleanup_finished();
         }
-
-        let state = DynamicState {
-            line_width: None,
-            viewports: Some(vec![Viewport {
-                origin: [0.0, 0.0],
-                dimensions: self.dimensions,
-                depth_range: 0.0..1.0,
-            }]),
-            scissors: None,
-        };
 
         let command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(
             Arc::clone(self.queue.device()),
@@ -253,35 +224,30 @@ impl RenderSystem {
             false,
             vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
         )?;
-        let command_buffer = d3.commit(command_buffer, &state)?.next_subpass(false)?;
+        let command_buffer = d3.commit(command_buffer, &self.state)?.next_subpass(false)?;
         let command_buffer = d2
-            .commit(command_buffer, &state, self.logical_size())?
+            .commit(command_buffer, &self.state, self.logical_size())?
             .end_render_pass()?
             .build()?;
 
         self.prev_frame = Some(match self.prev_frame.take() {
-            Some(last_frame) => self.execute(last_frame.join(acquire), command_buffer, img_num)?,
-            None => self.execute(acquire, command_buffer, img_num)?,
+            Some(last_frame) => self.execute(last_frame.join(acquire), command_buffer)?,
+            None => self.execute(acquire, command_buffer)?,
         });
         Ok(())
     }
 
     fn execute(
         &self,
-        acquire_future: impl GpuFuture,
+        acquire_future: impl GpuFuture + Send + Sync + 'static,
         command_buffer: AutoCommandBuffer,
-        image_num: usize,
-    ) -> Result<Box<impl GpuFuture>, failure::Error> {
+    ) -> Result<Box<GpuFuture + Send + Sync>, failure::Error> {
         let future = acquire_future
             .then_execute(Arc::clone(&self.queue), command_buffer)?
-            .then_signal_fence()
-            .then_swapchain_present(
-                Arc::clone(&self.queue),
-                Arc::clone(&self.swapchain),
-                image_num,
-            );
+            .then_signal_fence();
+        let future = self.target.present(&self.queue, future);
         future.flush()?;
-        Ok(Box::new(future))
+        Ok(future)
     }
 
     fn logical_size(&self) -> [f32; 2] {
@@ -290,31 +256,10 @@ impl RenderSystem {
     }
 }
 
-fn create_framebuffers(
-    pass: &Arc<RenderPassAbstract + Send + Sync>,
-    images: impl IntoIterator<Item = Arc<SwapchainImage<Window>>>,
-    dbuf: &Arc<AttachmentImage<D16Unorm>>,
-) -> Result<Vec<Arc<FramebufferAbstract + Send + Sync>>, failure::Error> {
-    images
-        .into_iter()
-        .map(|img| create_framebuffer(pass, img, dbuf))
-        .collect()
-}
-
-fn create_framebuffer(
-    pass: &Arc<RenderPassAbstract + Send + Sync>,
-    img: Arc<SwapchainImage<Window>>,
-    dbuf: &Arc<AttachmentImage<D16Unorm>>,
-) -> Result<Arc<FramebufferAbstract + Send + Sync>, failure::Error> {
-    Ok(Arc::new(
-        Framebuffer::start(Arc::clone(pass))
-            .add(img)?
-            .add(Arc::clone(dbuf))?
-            .build()?,
-    ))
-}
-
-impl<'a> System<'a> for RenderSystem {
+impl<'a, T> System<'a> for RenderSystem<T>
+where
+    T: Target,
+{
     type SystemData = (
         ReadExpect<'a, EventChannel<winit::Event>>,
         WriteExpect<'a, d3::Renderer>,
