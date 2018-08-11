@@ -51,11 +51,11 @@ fn fmt_payload(payload: &(Any + Send)) -> String {
 
 fn fmt_error(err: &failure::Error) -> String {
     let mut pretty = err.to_string();
-    let mut prev = err.cause();
-    while let Some(next) = prev.cause() {
+    let mut fail = err.as_fail();
+    while let Some(next) = fail.cause() {
         pretty.push_str(": ");
         pretty.push_str(&next.to_string());
-        prev = next;
+        fail = next;
     }
     pretty
 }
