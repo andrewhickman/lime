@@ -8,7 +8,7 @@ use utils::throw;
 use vulkano::command_buffer::{AutoCommandBuffer, AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::{Device, DeviceExtensions, Queue};
 use vulkano::format::Format;
-use vulkano::framebuffer::Subpass;
+use vulkano::framebuffer::{RenderPassAbstract, Subpass};
 use vulkano::instance::{Instance, PhysicalDevice};
 use vulkano::pipeline::viewport::Viewport;
 use vulkano::swapchain::Surface;
@@ -79,38 +79,47 @@ impl RenderSystem<SwapchainTarget> {
         let logical_size = surface.window().get_inner_size().unwrap();
         let (w, h) = logical_size.to_physical(dpi_factor).into();
 
-        let target = SwapchainTarget::new(&queue, &surface, [w, h], |format| {
-            Arc::new(
-                ordered_passes_renderpass!(Arc::clone(queue.device()),
-                attachments: {
-                    color: {
-                        load: Clear,
-                        store: Store,
-                        format: format,
-                        samples: 1,
-                    },
-                    depth: {
-                        load: Clear,
-                        store: DontCare,
-                        format: Format::D16Unorm,
-                        samples: 1,
-                    }
+        let caps = surface
+            .capabilities(queue.device().physical_device())
+            .unwrap_or_else(throw);
+        let &(format, _) = caps
+            .supported_formats
+            .first()
+            .expect("surface has no supported formats");
+
+        let render_pass = Arc::new(
+            ordered_passes_renderpass!(Arc::clone(queue.device()),
+            attachments: {
+                color: {
+                    load: Clear,
+                    store: Store,
+                    format: format,
+                    samples: 1,
                 },
-                passes: [
-                    {
-                        color: [color],
-                        depth_stencil: {depth},
-                        input: []
-                    },
-                    {
-                        color: [color],
-                        depth_stencil: { },
-                        input: []
-                    }
-                ]
-            ).unwrap_or_else(throw),
-            )
-        }).unwrap_or_else(throw);
+                depth: {
+                    load: Clear,
+                    store: DontCare,
+                    format: Format::D16Unorm,
+                    samples: 1,
+                }
+            },
+            passes: [
+                {
+                    color: [color],
+                    depth_stencil: {depth},
+                    input: []
+                },
+                {
+                    color: [color],
+                    depth_stencil: { },
+                    input: []
+                }
+            ]
+        ).unwrap_or_else(throw),
+        ) as Arc<RenderPassAbstract + Send + Sync>;
+
+        let target = SwapchainTarget::new(&queue, &surface, &render_pass, [w, h], format)
+            .unwrap_or_else(throw);
 
         let event_rx = {
             let mut event_tx = world.write_resource::<EventChannel<winit::Event>>();
@@ -124,11 +133,11 @@ impl RenderSystem<SwapchainTarget> {
 
         world.add_resource(d3::Renderer::new(
             queue.device(),
-            Subpass::from(target.render_pass(), 0).unwrap(),
+            Subpass::from(Arc::clone(&render_pass), 0).unwrap(),
         ));
         world.add_resource(d2::Renderer::new(
             queue.device(),
-            Subpass::from(target.render_pass(), 1).unwrap(),
+            Subpass::from(Arc::clone(&render_pass), 1).unwrap(),
         ));
 
         let dimensions = [w as f32, h as f32];

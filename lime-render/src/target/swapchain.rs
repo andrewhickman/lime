@@ -3,18 +3,16 @@ use std::sync::Arc;
 
 use failure;
 use vulkano::device::Queue;
-use vulkano::format::{D16Unorm, Format};
-use vulkano::framebuffer::{
-    Framebuffer, FramebufferAbstract, FramebufferCreationError, RenderPassAbstract,
-};
-use vulkano::image::{AttachmentImage, SwapchainImage};
+use vulkano::format::{D16Unorm, FormatDesc};
+use vulkano::framebuffer::{FramebufferAbstract, RenderPassAbstract};
+use vulkano::image::AttachmentImage;
 use vulkano::swapchain::{
     self, AcquireError, PresentMode, Surface, SurfaceTransform, Swapchain, SwapchainAcquireFuture,
 };
 use vulkano::sync::GpuFuture;
 use winit::Window;
 
-use target::Target;
+use target::{create_framebuffers, Target};
 
 pub(crate) struct SwapchainTarget {
     swapchain: Arc<Swapchain<Window>>,
@@ -24,20 +22,14 @@ pub(crate) struct SwapchainTarget {
 }
 
 impl SwapchainTarget {
-    pub(crate) fn new<F>(
+    pub(crate) fn new(
         queue: &Arc<Queue>,
         surface: &Arc<Surface<Window>>,
+        render_pass: &Arc<RenderPassAbstract + Send + Sync>,
         dimensions: [u32; 2],
-        render_pass: F,
-    ) -> Result<Self, failure::Error>
-    where
-        F: FnOnce(Format) -> Arc<RenderPassAbstract + Send + Sync>,
-    {
+        format: impl FormatDesc,
+    ) -> Result<Self, failure::Error> {
         let caps = surface.capabilities(queue.device().physical_device())?;
-        let format = caps
-            .supported_formats
-            .first()
-            .expect("surface has no supported formats");
         let alpha = caps
             .supported_composite_alpha
             .iter()
@@ -48,7 +40,7 @@ impl SwapchainTarget {
             Arc::clone(queue.device()),
             Arc::clone(surface),
             caps.min_image_count,
-            format.0,
+            format,
             dimensions,
             1,
             caps.supported_usage_flags,
@@ -60,13 +52,12 @@ impl SwapchainTarget {
             None,
         )?;
 
-        let render_pass = render_pass(swapchain.format());
         let dbuf = AttachmentImage::transient(Arc::clone(queue.device()), dimensions, D16Unorm)?;
         let framebuffers = create_framebuffers(&render_pass, images, &dbuf)?;
 
         Ok(SwapchainTarget {
             swapchain,
-            render_pass,
+            render_pass: Arc::clone(render_pass),
             framebuffers,
             index: Cell::default(),
         })
@@ -75,10 +66,6 @@ impl SwapchainTarget {
 
 impl Target for SwapchainTarget {
     type AcquireFuture = SwapchainAcquireFuture<Window>;
-
-    fn render_pass(&self) -> Arc<RenderPassAbstract + Send + Sync> {
-        Arc::clone(&self.render_pass)
-    }
 
     fn resize(&mut self, queue: &Arc<Queue>, dimensions: [u32; 2]) -> Result<(), failure::Error> {
         let (swapchain, images) = self.swapchain.recreate_with_dimension(dimensions)?;
@@ -107,28 +94,4 @@ impl Target for SwapchainTarget {
             self.index.take().expect("swapchain image not acquired"),
         ))
     }
-}
-
-fn create_framebuffers(
-    pass: &Arc<RenderPassAbstract + Send + Sync>,
-    images: impl IntoIterator<Item = Arc<SwapchainImage<Window>>>,
-    dbuf: &Arc<AttachmentImage<D16Unorm>>,
-) -> Result<Vec<Arc<FramebufferAbstract + Send + Sync>>, FramebufferCreationError> {
-    images
-        .into_iter()
-        .map(|img| create_framebuffer(pass, img, dbuf))
-        .collect()
-}
-
-fn create_framebuffer(
-    pass: &Arc<RenderPassAbstract + Send + Sync>,
-    img: Arc<SwapchainImage<Window>>,
-    dbuf: &Arc<AttachmentImage<D16Unorm>>,
-) -> Result<Arc<FramebufferAbstract + Send + Sync>, FramebufferCreationError> {
-    Ok(Arc::new(
-        Framebuffer::start(Arc::clone(pass))
-            .add(img)?
-            .add(Arc::clone(dbuf))?
-            .build()?,
-    ))
 }
