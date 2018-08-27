@@ -26,16 +26,16 @@ mod target;
 
 pub use self::color::Color;
 pub use self::context::Context;
+pub use self::target::{ImageTarget, SwapchainTarget, Target};
 
 use specs::{DispatcherBuilder, World};
-use winit::Window;
 
-pub fn init(
+pub fn init<T: Target>(
     world: &mut World,
     dispatcher: &mut DispatcherBuilder,
-    window: Window,
+    data: T::InitData,
     d3: &str,
     d2: &str,
 ) {
-    sys::RenderSystem::add(world, dispatcher, window, d3, d2);
+    sys::RenderSystem::<T>::add(world, dispatcher, data, d3, d2);
 }

@@ -6,7 +6,7 @@ pub use self::mesh::Mesh;
 
 use std::sync::Arc;
 
-use failure;
+use failure::Fallible;
 use utils::throw;
 use vulkano::buffer::CpuBufferPool;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
@@ -68,7 +68,7 @@ impl Renderer {
         &mut self,
         mut cmd: AutoCommandBufferBuilder,
         state: &DynamicState,
-    ) -> Result<AutoCommandBufferBuilder, failure::Error> {
+    ) -> Fallible<AutoCommandBufferBuilder> {
         let ubuf = self.ubuf.next(vs::ty::Data {
             world: [
                 [1.0, 0.0, 0.0, 0.0],

@@ -3,3 +3,5 @@
 **/*.rs.bk
 Cargo.lock
 TODO.md
+.vscode/*
+triangle.png

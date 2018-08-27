@@ -33,7 +33,8 @@ impl LayoutSystem {
 
         let mut solver = Solver::new();
 
-        let pos = poss.entry(root.entity())
+        let pos = poss
+            .entry(root.entity())
             .unwrap_or_else(throw)
             .or_insert_with(Default::default)
             .clone();
@@ -49,7 +50,7 @@ impl LayoutSystem {
         let height = pos.bottom_var();
         solver.add_edit_variable(height, REQUIRED - 1.0).unwrap();
 
-        let mut sys = LayoutSystem {
+        let sys = LayoutSystem {
             solver,
             changes: FnvHashMap::default(),
             events_rx: events_tx.register_reader(),
@@ -57,8 +58,6 @@ impl LayoutSystem {
             width,
             height,
         };
-
-        sys.handle_resize(&events_tx);
 
         dispatcher.add_thread_local(sys);
     }
@@ -76,7 +75,7 @@ impl LayoutSystem {
             .last();
 
         if let Some(size) = resize {
-            trace!("Resizing ui to '({}, {})'.", size.width, size.height);
+            trace!("Resizing to ({}, {}).", size.width, size.height);
             let width = self.width;
             self.resize(width, size.width);
             let height = self.height;

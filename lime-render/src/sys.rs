@@ -1,43 +1,38 @@
-use std::iter;
+use std::marker::PhantomData;
 use std::sync::Arc;
 
-use failure;
+use failure::Fallible;
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::*;
 use utils::throw;
 use vulkano::command_buffer::{AutoCommandBuffer, AutoCommandBufferBuilder, DynamicState};
-use vulkano::device::{Device, DeviceExtensions, Queue};
-use vulkano::format::Format;
-use vulkano::framebuffer::{RenderPassAbstract, Subpass};
+use vulkano::framebuffer::Subpass;
 use vulkano::instance::{Instance, PhysicalDevice};
 use vulkano::pipeline::viewport::Viewport;
-use vulkano::swapchain::Surface;
 use vulkano::sync::GpuFuture;
 use vulkano_win;
-use winit::{self, Window, WindowEvent};
+use winit::{self, WindowEvent};
 
-use target::{SwapchainTarget, Target};
-use {d2, d3};
+use {d2, d3, Context, Target};
 
 pub(crate) struct RenderSystem<T> {
-    pub(crate) queue: Arc<Queue>,
-    surface: Arc<Surface<Window>>,
     prev_frame: Option<Box<GpuFuture + Send + Sync>>,
     swapchain_dirty: bool,
-    dpi_factor: f32,
     event_rx: ReaderId<winit::Event>,
-    dimensions: [f32; 2],
     state: DynamicState,
-    target: T,
+    _target: PhantomData<T>,
 }
 
-impl RenderSystem<SwapchainTarget> {
+impl<T> RenderSystem<T>
+where
+    T: Target,
+{
     pub const NAME: &'static str = "render::Render";
 
     pub(crate) fn add(
         world: &mut World,
         dispatcher: &mut DispatcherBuilder,
-        window: Window,
+        data: T::InitData,
         d3_sys: &str,
         d2_sys: &str,
     ) {
@@ -51,133 +46,57 @@ impl RenderSystem<SwapchainTarget> {
             .expect("no device available");
         info!("Using device: {} (type: {:?}).", phys.name(), phys.ty());
 
-        let surface =
-            vulkano_win::create_vk_surface(window, Arc::clone(&instance)).unwrap_or_else(throw);
+        let (target, ctx) = T::new(phys, data).unwrap_or_else(throw);
 
-        let queue_family = phys
-            .queue_families()
-            .find(|&q| q.supports_graphics() && surface.is_supported(q).unwrap_or(false))
-            .expect("couldn't find a graphical queue family");
+        let event_rx = world
+            .write_resource::<EventChannel<winit::Event>>()
+            .register_reader();
 
-        let (_, mut queues) = {
-            let device_ext = DeviceExtensions {
-                khr_swapchain: true,
-                ..DeviceExtensions::none()
-            };
-
-            Device::new(
-                phys,
-                phys.supported_features(),
-                &device_ext,
-                iter::once((queue_family, 0.5)),
-            ).unwrap_or_else(throw)
-        };
-
-        let queue = queues.next().unwrap();
-
-        let dpi_factor = surface.window().get_hidpi_factor();
-        let logical_size = surface.window().get_inner_size().unwrap();
-        let (w, h) = logical_size.to_physical(dpi_factor).into();
-
-        let caps = surface
-            .capabilities(queue.device().physical_device())
-            .unwrap_or_else(throw);
-        let &(format, _) = caps
-            .supported_formats
-            .first()
-            .expect("surface has no supported formats");
-
-        let render_pass = Arc::new(
-            ordered_passes_renderpass!(Arc::clone(queue.device()),
-            attachments: {
-                color: {
-                    load: Clear,
-                    store: Store,
-                    format: format,
-                    samples: 1,
-                },
-                depth: {
-                    load: Clear,
-                    store: DontCare,
-                    format: Format::D16Unorm,
-                    samples: 1,
-                }
-            },
-            passes: [
-                {
-                    color: [color],
-                    depth_stencil: {depth},
-                    input: []
-                },
-                {
-                    color: [color],
-                    depth_stencil: { },
-                    input: []
-                }
-            ]
-        ).unwrap_or_else(throw),
-        ) as Arc<RenderPassAbstract + Send + Sync>;
-
-        let target = SwapchainTarget::new(&queue, &surface, &render_pass, [w, h], format)
-            .unwrap_or_else(throw);
-
-        let event_rx = {
-            let mut event_tx = world.write_resource::<EventChannel<winit::Event>>();
-            let event_rx = event_tx.register_reader();
-            event_tx.single_write(winit::Event::WindowEvent {
-                event: WindowEvent::Resized(logical_size),
-                window_id: surface.window().id(),
-            });
-            event_rx
-        };
-
-        world.add_resource(d3::Renderer::new(
-            queue.device(),
-            Subpass::from(Arc::clone(&render_pass), 0).unwrap(),
-        ));
-        world.add_resource(d2::Renderer::new(
-            queue.device(),
-            Subpass::from(Arc::clone(&render_pass), 1).unwrap(),
-        ));
-
-        let dimensions = [w as f32, h as f32];
-
+        let [w, h] = target.dimensions();
         let state = DynamicState {
             line_width: None,
             viewports: Some(vec![Viewport {
                 origin: [0.0, 0.0],
-                dimensions,
+                dimensions: [w as f32, h as f32],
                 depth_range: 0.0..1.0,
             }]),
             scissors: None,
         };
 
+        world.add_resource(d3::Renderer::new(
+            ctx.device(),
+            Subpass::from(Arc::clone(target.render_pass()), 0).unwrap(),
+        ));
+        world.add_resource(d2::Renderer::new(
+            ctx.device(),
+            Subpass::from(Arc::clone(target.render_pass()), 1).unwrap(),
+        ));
+        world.add_resource(ctx);
+        world.add_resource(target);
+
         dispatcher.add(
             RenderSystem {
-                surface,
-                queue,
                 prev_frame: None,
                 swapchain_dirty: false,
-                dpi_factor: dpi_factor as f32,
                 event_rx,
-                target,
-                dimensions,
                 state,
+                _target: PhantomData::<T>,
             },
-            RenderSystem::NAME,
+            Self::NAME,
             &[d3_sys, d2_sys],
         )
     }
-}
 
-impl<T> RenderSystem<T>
-where
-    T: Target,
-{
-    fn render(&mut self, d3: &mut d3::Renderer, d2: &mut d2::Renderer) {
+    fn render(
+        &mut self,
+        ctx: &Context,
+        target: &mut T,
+        d3: &mut d3::Renderer,
+        d2: &mut d2::Renderer,
+    ) {
         for _ in 0..5 {
             if self.swapchain_dirty {
-                match self.recreate_swapchain() {
+                match self.recreate_swapchain(ctx, target) {
                     Ok(()) => {
                         trace!("Recreate swapchain succeeded");
                         self.swapchain_dirty = false;
@@ -188,7 +107,7 @@ where
                     }
                 }
             } else {
-                match self.try_render(d3, d2) {
+                match self.try_render(ctx, target, d3, d2) {
                     Ok(()) => {
                         trace!("Draw succeeded.");
                         break;
@@ -202,32 +121,29 @@ where
         }
     }
 
-    fn recreate_swapchain(&mut self) -> Result<(), failure::Error> {
-        let dimensions = self
-            .surface
-            .capabilities(self.queue.device().physical_device())?
-            .current_extent
-            .unwrap();
-        self.target.resize(&self.queue, dimensions)?;
-        self.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
-        self.state.viewports.as_mut().unwrap()[0].dimensions = self.dimensions;
+    fn recreate_swapchain(&mut self, ctx: &Context, target: &mut T) -> Fallible<()> {
+        target.recreate(ctx)?;
+        let [w, h] = target.dimensions();
+        self.state.viewports.as_mut().unwrap()[0].dimensions = [w as f32, h as f32];
         Ok(())
     }
 
     fn try_render(
         &mut self,
+        ctx: &Context,
+        target: &mut T,
         d3: &mut d3::Renderer,
         d2: &mut d2::Renderer,
-    ) -> Result<(), failure::Error> {
-        let (fb, acquire) = self.target.acquire(&self.queue)?;
+    ) -> Fallible<()> {
+        let (fb, acquire) = target.acquire(ctx)?;
 
         if let Some(ref mut last_frame) = self.prev_frame {
             last_frame.cleanup_finished();
         }
 
         let command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(
-            Arc::clone(self.queue.device()),
-            self.queue.family(),
+            Arc::clone(ctx.device()),
+            ctx.graphics_queue().family(),
         )?.begin_render_pass(
             fb,
             false,
@@ -235,33 +151,32 @@ where
         )?;
         let command_buffer = d3.commit(command_buffer, &self.state)?.next_subpass(false)?;
         let command_buffer = d2
-            .commit(command_buffer, &self.state, self.logical_size())?
+            .commit(command_buffer, &self.state, target.logical_size())?
             .end_render_pass()?
             .build()?;
 
         self.prev_frame = Some(match self.prev_frame.take() {
-            Some(last_frame) => self.execute(last_frame.join(acquire), command_buffer)?,
-            None => self.execute(acquire, command_buffer)?,
+            Some(last_frame) => {
+                self.execute(ctx, target, last_frame.join(acquire), command_buffer)?
+            }
+            None => self.execute(ctx, target, acquire, command_buffer)?,
         });
         Ok(())
     }
 
     fn execute(
-        &self,
+        &mut self,
+        ctx: &Context,
+        target: &mut T,
         acquire_future: impl GpuFuture + Send + Sync + 'static,
         command_buffer: AutoCommandBuffer,
-    ) -> Result<Box<GpuFuture + Send + Sync>, failure::Error> {
+    ) -> Fallible<Box<GpuFuture + Send + Sync>> {
         let future = acquire_future
-            .then_execute(Arc::clone(&self.queue), command_buffer)?
+            .then_execute(Arc::clone(ctx.graphics_queue()), command_buffer)?
             .then_signal_fence();
-        let future = self.target.present(&self.queue, future);
+        let future = target.present(ctx, future)?;
         future.flush()?;
         Ok(future)
-    }
-
-    fn logical_size(&self) -> [f32; 2] {
-        let [w, h] = self.dimensions;
-        [w / self.dpi_factor, h / self.dpi_factor]
     }
 }
 
@@ -271,21 +186,23 @@ where
 {
     type SystemData = (
         ReadExpect<'a, EventChannel<winit::Event>>,
+        ReadExpect<'a, Context>,
+        WriteExpect<'a, T>,
         WriteExpect<'a, d3::Renderer>,
         WriteExpect<'a, d2::Renderer>,
     );
 
-    fn run(&mut self, (event_tx, mut d3, mut d2): Self::SystemData) {
+    fn run(&mut self, (event_tx, ctx, mut target, mut d3, mut d2): Self::SystemData) {
         for event in event_tx.read(&mut self.event_rx) {
             if let winit::Event::WindowEvent {
-                event: WindowEvent::HiDpiFactorChanged(dpi_factor),
+                event: WindowEvent::HiDpiFactorChanged(_factor),
                 ..
             } = event
             {
-                self.dpi_factor = *dpi_factor as f32;
+                //                self.target.set_hidpi_factor(factor)
             }
         }
 
-        self.render(&mut d3, &mut d2);
+        self.render(&ctx, &mut target, &mut d3, &mut d2);
     }
 }

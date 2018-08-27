@@ -4,7 +4,7 @@ pub use self::geom::Point;
 
 use std::sync::Arc;
 
-use failure;
+use failure::Fallible;
 use utils::throw;
 use vulkano::buffer::CpuBufferPool;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
@@ -72,7 +72,7 @@ impl Renderer {
         cmd: AutoCommandBufferBuilder,
         state: &DynamicState,
         logical_size: [f32; 2],
-    ) -> Result<AutoCommandBufferBuilder, failure::Error> {
+    ) -> Fallible<AutoCommandBufferBuilder> {
         let vbuf = self.vbuf.chunk(self.queued.drain(..))?;
         let ubuf = self.ubuf.next(vs::ty::Data {
             dimensions: logical_size,
