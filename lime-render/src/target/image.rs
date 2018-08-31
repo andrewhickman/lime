@@ -33,13 +33,13 @@ impl ImageTarget {
 
     pub fn read<R, T>(&mut self, read: R) -> Fallible<T>
     where
-        R: FnOnce(&[u8]) -> Fallible<T>,
+        R: FnOnce(&[u8], [u32; 2]) -> Fallible<T>,
     {
         if let Some(fence) = self.fence.take() {
             fence.wait(None)?;
         }
 
-        read(&self.buffer.read()?)
+        read(&self.buffer.read()?, self.dimensions())
     }
 }
 

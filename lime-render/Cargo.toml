@@ -19,7 +19,9 @@ shrev = "1.0.1"
 vulkano = "0.10.0"
 vulkano-shader-derive = "0.10.0"
 vulkano-win = "0.10.0"
+vulkano-glyph = "0.2.0"
 winit = "0.17.1"
+rusttype = "0.7.0"
 
 [dev-dependencies]
 env_logger = "0.5.10"

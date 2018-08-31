@@ -9,7 +9,7 @@ use std::fs::File;
 
 use image::png::PNGEncoder;
 use image::ColorType;
-use render::{d2, Color, ImageTarget, Target};
+use render::{d2, Color, ImageTarget};
 use shrev::EventChannel;
 use specs::prelude::*;
 
@@ -32,7 +32,7 @@ impl<'a> System<'a> for D2 {
             d2::Point(200.0, 100.0),
             d2::Point(100.0, 200.0),
         ];
-        renderer.draw_tri(&VERTICES, Color::RED)
+        renderer.draw_tris(&VERTICES, Color::RED)
     }
 }
 
@@ -50,16 +50,12 @@ fn main() {
     dispatcher.run_now(&mut world.res);
     world.maintain();
 
-    let encoder = PNGEncoder::new(File::create("triangle.png").unwrap());
-    {
-        let mut target = world.write_resource::<ImageTarget>();
-        let [width, height] = target.dimensions();
-        target
-            .read(|data| {
-                encoder
-                    .encode(data, width, height, ColorType::RGBA(8))
-                    .map_err(From::from)
-            })
-            .unwrap();
-    }
+    world
+        .write_resource::<ImageTarget>()
+        .read(|data, [width, height]| {
+            PNGEncoder::new(File::create("triangle.png").unwrap())
+                .encode(data, width, height, ColorType::RGBA(8))
+                .map_err(From::from)
+        })
+        .unwrap();
 }

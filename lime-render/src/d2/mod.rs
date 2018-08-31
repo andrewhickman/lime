@@ -1,36 +1,30 @@
 mod geom;
+mod tri;
 
 pub use self::geom::Point;
 
 use std::sync::Arc;
 
 use failure::Fallible;
+use rusttype::PositionedGlyph;
 use utils::throw;
-use vulkano::buffer::CpuBufferPool;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
-use vulkano::descriptor::descriptor_set::FixedSizeDescriptorSetsPool;
-use vulkano::descriptor::PipelineLayoutAbstract;
 use vulkano::device::Device;
 use vulkano::framebuffer::{RenderPassAbstract, Subpass};
-use vulkano::pipeline::vertex::SingleBufferDefinition;
-use vulkano::pipeline::GraphicsPipeline;
+use vulkano_glyph::{FontId, GlyphBrush, Section as GlyphSection};
 
+use d2::tri::{TriangleBrush, TriangleSection};
 use Color;
 
-type Pipeline = Arc<
-    GraphicsPipeline<
-        SingleBufferDefinition<Vertex>,
-        Box<PipelineLayoutAbstract + Send + Sync>,
-        Arc<RenderPassAbstract + Send + Sync>,
-    >,
->;
-
 pub struct Renderer {
-    vbuf: CpuBufferPool<Vertex>,
-    ubuf: CpuBufferPool<vs::ty::Data>,
-    pipe: Pipeline,
-    pool: FixedSizeDescriptorSetsPool<Pipeline>,
-    queued: Vec<Vertex>,
+    tri_brush: TriangleBrush,
+    glyph_brush: GlyphBrush<'static>,
+    sections: Vec<Section>,
+}
+
+enum Section {
+    Triangle(TriangleSection),
+    Glyph(GlyphSection),
 }
 
 impl Renderer {
@@ -38,83 +32,62 @@ impl Renderer {
         device: &Arc<Device>,
         subpass: Subpass<Arc<RenderPassAbstract + Send + Sync>>,
     ) -> Self {
-        let vs = vs::Shader::load(Arc::clone(device)).unwrap_or_else(throw);
-        let fs = fs::Shader::load(Arc::clone(device)).unwrap_or_else(throw);
-
-        let pipe = Arc::new(
-            GraphicsPipeline::start()
-                .vertex_input_single_buffer::<Vertex>()
-                .vertex_shader(vs.main_entry_point(), ())
-                .triangle_list()
-                .viewports_dynamic_scissors_irrelevant(1)
-                .fragment_shader(fs.main_entry_point(), ())
-                .render_pass(subpass)
-                .build(Arc::clone(device))
-                .unwrap_or_else(throw),
-        );
-
-        let vbuf = CpuBufferPool::vertex_buffer(Arc::clone(device));
-        let ubuf = CpuBufferPool::uniform_buffer(Arc::clone(device));
-
-        let pool = FixedSizeDescriptorSetsPool::new(Arc::clone(&pipe), 0);
-
+        let tri_brush = TriangleBrush::new(device, subpass.clone());
+        let glyph_brush = GlyphBrush::new(device, subpass).unwrap_or_else(throw);
         Renderer {
-            pipe,
-            vbuf,
-            ubuf,
-            pool,
-            queued: Vec::new(),
+            tri_brush,
+            glyph_brush,
+            sections: Vec::new(),
         }
     }
 
     pub(crate) fn commit(
         &mut self,
-        cmd: AutoCommandBufferBuilder,
+        mut cmd: AutoCommandBufferBuilder,
         state: &DynamicState,
         logical_size: [f32; 2],
     ) -> Fallible<AutoCommandBufferBuilder> {
-        let vbuf = self.vbuf.chunk(self.queued.drain(..))?;
-        let ubuf = self.ubuf.next(vs::ty::Data {
-            dimensions: logical_size,
-        })?;
-        let set = self.pool.next().add_buffer(ubuf)?.build()?;
+        for section in self.sections.drain(..) {
+            match section {
+                Section::Triangle(section) => {
+                    cmd = self.tri_brush.draw(cmd, &section, state, logical_size)?;
+                }
+                Section::Glyph(section) => {
+                    cmd = self.glyph_brush.draw(
+                        cmd,
+                        &section,
+                        state,
+                        [
+                            [1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                        logical_size,
+                    )?;
+                }
+            }
+        }
 
-        Ok(cmd.draw(Arc::clone(&self.pipe), state, vbuf, set, ())?)
+        self.glyph_brush.clear();
+
+        Ok(cmd)
     }
 
-    pub fn draw_tri(&mut self, vertices: &[Point], color: Color) {
-        debug_assert!(vertices.len() % 3 == 0);
-        self.queued
-            .extend(vertices.iter().map(|&v| Vertex::new(v, color)));
+    pub fn draw_tris(&mut self, vertices: &[Point], color: Color) {
+        let subsection = self.tri_brush.queue_tris(vertices, color);
+        if let Some(Section::Triangle(section)) = self.sections.last_mut() {
+            section.append(&subsection);
+            return;
+        }
+        self.sections.push(Section::Triangle(subsection));
     }
-}
 
-#[derive(Copy, Clone, Debug)]
-struct Vertex {
-    position: Point,
-    color: Color,
-}
-
-impl Vertex {
-    fn new(position: Point, color: Color) -> Self {
-        Vertex { position, color }
+    pub fn draw_glyphs<I>(&mut self, glyphs: I, font: FontId, color: Color)
+    where
+        I: IntoIterator<Item = PositionedGlyph<'static>>,
+    {
+        let section = self.glyph_brush.queue_glyphs(glyphs, font, color.into());
+        self.sections.push(Section::Glyph(section));
     }
-}
-
-impl_vertex!(Vertex, position, color);
-
-#[allow(unused)]
-mod vs {
-    #[derive(VulkanoShader)]
-    #[ty = "vertex"]
-    #[path = "shader/d2/vert.glsl"]
-    struct Dummy;
-}
-
-#[allow(unused)]
-mod fs {
-    #[derive(VulkanoShader)]
-    #[ty = "fragment"]
-    #[path = "shader/d2/frag.glsl"]
-    struct Dummy;
 }

@@ -28,7 +28,7 @@ impl<'a> System<'a> for D2 {
             d2::Point(200.0, 100.0),
             d2::Point(100.0, 200.0),
         ];
-        renderer.draw_tri(&VERTICES, Color::RED)
+        renderer.draw_tris(&VERTICES, Color::RED)
     }
 }
 

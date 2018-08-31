@@ -5,3 +5,4 @@ Cargo.lock
 TODO.md
 .vscode/*
 triangle.png
+lime-render/tests/data/**/actual.png

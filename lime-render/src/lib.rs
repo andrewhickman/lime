@@ -13,6 +13,8 @@ extern crate serde_derive;
 extern crate vulkano;
 #[macro_use]
 extern crate vulkano_shader_derive;
+extern crate rusttype;
+extern crate vulkano_glyph;
 extern crate vulkano_win;
 extern crate winit;
 

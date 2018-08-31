@@ -60,6 +60,18 @@ unsafe impl VertexMember for Color {
     }
 }
 
+impl From<[f32; 4]> for Color {
+    fn from([r, g, b, a]: [f32; 4]) -> Self {
+        Color { r, g, b, a }
+    }
+}
+
+impl From<Color> for [f32; 4] {
+    fn from(color: Color) -> Self {
+        [color.r, color.g, color.b, color.a]
+    }
+}
+
 impl FromStr for Color {
     type Err = ParseError;
 
