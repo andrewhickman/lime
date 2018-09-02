@@ -30,11 +30,12 @@ where
     let out_path = test_data_path(dir.as_ref()).join("actual.png");
     let in_path = test_data_path(dir.as_ref()).join("expected.png");
 
-    let (exp_data, exp_dims) = read_png(in_path);
     world
         .write_resource::<ImageTarget>()
         .read(|data, [width, height]| {
             write_png(out_path, data, (width, height));
+
+            let (exp_data, exp_dims) = read_png(in_path);
             assert_eq!(data, &*exp_data);
             assert_eq!((width, height), exp_dims);
             Ok(())

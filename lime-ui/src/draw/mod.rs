@@ -48,7 +48,7 @@ impl<'a> System<'a> for DrawSystem {
                     if let Some(brush) = brushes.get(ent) {
                         match *brush {
                             Brush::Color(color) => if let Some(pos) = poss.get(ent) {
-                                renderer.draw_tri(&pos.tris(), color)
+                                renderer.draw_tris(&pos.tris(), color)
                             },
                         }
                     }
